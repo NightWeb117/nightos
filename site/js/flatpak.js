@@ -28,7 +28,7 @@ async function fpDetails(id) {
   else {
     const r = await fetch('https://flathub.org/api/v2/appstream/' + encodeURIComponent(id)); if (!r.ok) throw new Error('Flathub said ' + r.status);
     const a = await r.json();
-    d = { id, name: a.name, summary: a.summary || '', description: a.description || '', icon: a.icon || '', developer: a.developer_name || '', license: a.project_license || '', version: ((a.releases || [])[0] || {}).version || '', homepage: (a.urls || {}).homepage || '', screenshots: fpShots(a.screenshots) };
+    d = { id, name: a.name, summary: a.summary || '', description: a.description || '', icon: a.icon || '', developer: a.developer_name || '', license: a.project_license || '', version: ((a.releases || [])[0] || {}).version || '', homepage: (a.urls || {}).homepage || '', categories: a.categories || [], screenshots: fpShots(a.screenshots) };
   }
   return FLAT.details[id] = d;
 }
@@ -136,6 +136,7 @@ function fpWire(box, win, st) {
       return FLAT.rerender();
     }
     if (g('[data-fp-run]')) return fpRun(g('[data-fp-run]').dataset.fpRun);
+    if (g('[data-fp-launch]')) return launch(g('[data-fp-launch]').dataset.fpLaunch);
     if (g('[data-fp-install]')) {
       const id = g('[data-fp-install]').dataset.fpInstall, d = FLAT.details[id] || {};
       NATIVE.flatpakInstall(id, d.name || id).catch(x => notify('store', `Couldn't install ${d.name || id}`, fpErr(x)));
@@ -166,11 +167,24 @@ function fpDetailPage(box, win, st) {
   const rows = [['Version', d.version], ['Developer', d.developer], ['License', d.license], ['Download', fpSize(d.download)], ['Installed size', fpSize(d.size)], ['App ID', id], ['Runs in', desk ? `WSL${s.distro ? ' · ' + s.distro : ''}, in its own window` : 'NightOS for Windows (through WSL), or any Linux with Flatpak']].filter(r => r[1]);
   box.innerHTML = `<div class="ap-page"><button class="hbtn fp-back" data-fp-back>${sym('back')} All Flatpak apps</button>
     <div class="ap-detail">${fpIcon(d.icon, d.name)}<div><h2>${esc(d.name)}</h2><p class="ap-by">${esc(d.summary)}</p><div class="ap-row">${acts}</div></div></div>
+    ${fpTips(d)}
     ${d.screenshots.length ? `<div class="fp-shots">${d.screenshots.map(u => `<img src="${esc(u)}" alt="" loading="lazy">`).join('')}</div>` : ''}
     <div class="grp fp-desc">${fpDesc(d.description)}</div>
     <div class="grp">${rows.map(([k, v]) => `<div class="row"><div class="tx">${k}</div><span class="val" style="word-break:break-all">${esc(v)}</span></div>`).join('')}${d.homepage && /^https?:\/\//.test(d.homepage) ? `<div class="row"><div class="tx">Website</div><a class="val" href="${esc(d.homepage)}" target="_blank" rel="noopener">${esc(d.homepage)}</a></div>` : ''}</div>
   </div>`;
   fpWire(box, win, st);
+}
+
+// Flatpak apps in WSL can't use the graphics card, so warn on games and 3D apps, and point Sober users at Roblox for Windows.
+const FP_WINDOWS_BETTER = { 'org.vinegarhq.Sober': { app: 'robloxapp', name: 'Roblox', get: 'https://www.roblox.com/download' } };
+function fpTips(d) {
+  const snap = FLAT.snap && FLAT.snap.apps.find(a => a.id === d.id), cats = d.categories || [];
+  const heavy = cats.includes('Game') || cats.includes('3DGraphics') || (snap && snap.category === 'game');
+  const alt = FP_WINDOWS_BETTER[d.id], have = alt && APPS[alt.app];
+  let out = '';
+  if (alt) out += `<div class="grp fp-banner"><div>${sym('info')}</div><p><b>Play ${alt.name} for Windows instead.</b> ${esc(d.name)} brings ${alt.name} to Linux PCs. On Windows, ${alt.name}'s own app uses your graphics card and runs much better.</p>${have ? `<button class="hbtn sug" data-fp-launch="${alt.app}">Open ${alt.name}</button>` : `<a class="hbtn sug" href="${alt.get}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex">Get ${alt.name} for Windows</a>`}</div>`;
+  else if (heavy) out += `<div class="grp fp-banner"><div>${sym('info')}</div><p><b>This may run slowly.</b> Flatpak apps in NightOS for Windows can't use your graphics card, so 3D games and graphics-heavy apps draw on the CPU. Simple 2D games are usually fine.</p></div>`;
+  return out;
 }
 
 /* ---------- terminal: flatpak list / run / search / install ---------- */

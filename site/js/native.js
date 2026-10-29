@@ -32,8 +32,15 @@ if (NATIVE) {
   runStoreApp = (orig => a => a && a.kind === 'web' ? WebAppWindow(a, appKey(a.id)) : orig(a))(runStoreApp);
   // Power Off leaves the app after the shutdown sequence.
   SYSTEM.poweroff = async () => { await SYSTEM.shutdownSeq(false); NATIVE.quit(); };
+  // Roblox shows up when Roblox for Windows is installed. It's much better than Sober from Flathub here.
+  NATIVE.info().then(i => { if (!i.roblox) return; AI.robloxapp = () => tileSVG('#393b3d', 'R'); APPS.robloxapp = { name: 'Roblox', proc: 'RobloxPlayerBeta.exe', kw: 'roblox games play sober', launch: () => nativeRoblox() }; APP_CAT.robloxapp = 'Games'; if (!GRID_APPS.includes('robloxapp')) GRID_APPS.splice(1, 0, 'robloxapp'); updateDock(); });
   updateDock();
   scanSteam();
+}
+async function nativeRoblox() {
+  const ok = await nativeLaunch('roblox');
+  if (ok) notify('robloxapp', 'Opening Roblox', 'Roblox starts in its own window.');
+  else { notify('robloxapp', "Roblox isn't installed", 'Opening the Roblox download page in your browser.'); NATIVE.openExternal('https://www.roblox.com/download'); }
 }
 async function nativeLaunch(kind, arg, msg) {
   try { const ok = await NATIVE.launch(kind, arg); if (msg) notify(kind === 'steamGame' ? 'games' : 'store', ok === false ? 'Couldn\'t start it' : msg.split('|')[0], msg.split('|')[1] || ''); return ok; }

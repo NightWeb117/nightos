@@ -135,7 +135,7 @@ module.exports = function flatpak({ getWin, send }) {
     if (!validId(id)) throw new Error('Not a Flatpak app id');
     const [a, sum] = await Promise.all([api('appstream/' + id), api('summary/' + id).catch(() => ({}))]);
     const shots = (a.screenshots || []).map(x => (Array.isArray(x.sizes) ? x.sizes : []).filter(z => /^https:\/\//.test(z.src || '')).sort((p, q) => Math.abs(p.width - 752) - Math.abs(q.width - 752))[0]).filter(Boolean).map(z => z.src).slice(0, 6);
-    return { id, name: a.name, summary: a.summary || '', description: a.description || '', icon: a.icon || '', developer: a.developer_name || '', license: a.project_license || '', version: ((a.releases || [])[0] || {}).version || '', homepage: (a.urls || {}).homepage || '', screenshots: shots, download: sum.download_size || 0, size: sum.installed_size || 0 };
+    return { id, name: a.name, summary: a.summary || '', description: a.description || '', icon: a.icon || '', developer: a.developer_name || '', license: a.project_license || '', version: ((a.releases || [])[0] || {}).version || '', homepage: (a.urls || {}).homepage || '', categories: a.categories || [], screenshots: shots, download: sum.download_size || 0, size: sum.installed_size || 0 };
   }
 
   return { status, setup, list, install, uninstall, run, catalog, details, current: () => running };

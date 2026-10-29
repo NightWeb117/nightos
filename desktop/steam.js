@@ -71,4 +71,14 @@ function launchDiscord() {
   if (u && fs.existsSync(u)) { spawn(u, ['--processStart', 'Discord.exe'], { detached: true, stdio: 'ignore', windowsHide: false }).unref(); return true; }
   return false;
 }
-module.exports = { steamPath, listGames, imagePath, discordInstalled, launchDiscord };
+// Roblox for Windows keeps each version in its own folder. Use the newest player.
+function robloxPlayer() {
+  const base = process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Roblox', 'Versions');
+  try { return fs.readdirSync(base).map(d => path.join(base, d, 'RobloxPlayerBeta.exe')).filter(p => fs.existsSync(p)).sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)[0] || null; } catch (e) { return null; }
+}
+function launchRoblox() {
+  const p = robloxPlayer();
+  if (p) { spawn(p, [], { detached: true, stdio: 'ignore', windowsHide: false }).unref(); return true; }
+  return false;
+}
+module.exports = { steamPath, listGames, imagePath, discordInstalled, launchDiscord, robloxPlayer, launchRoblox };

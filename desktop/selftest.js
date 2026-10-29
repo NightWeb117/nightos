@@ -63,6 +63,9 @@ module.exports = (win, app) => {
         out.installed = (await nightosNative.flatpakList()).map(a => a.id);
         out.guard = []; for (const id of ['../../etc', 'rm -rf', 'org.gimp.GIMP;ls']) { try { await nightosNative.flatpakRun(id); out.guard.push(id + ': RAN'); } catch (e) { out.guard.push(id + ': refused'); } }
         const w = launch('store', 'flatpak'); await new Promise(r => setTimeout(r, 2500)); out.tab = { cards: w.body.querySelectorAll('.ap-card').length, banner: (w.body.querySelector('.fp-banner') || {}).innerText || '' };
+        const tip = async id => { w._fp.detail = id; w.go('flatpak'); for (let i = 0; i < 20 && !w.body.querySelector('.ap-detail'); i++) await new Promise(r => setTimeout(r, 500)); return (w.body.querySelector('.ap-page > .fp-banner') || {}).innerText || ''; };
+        out.soberTip = await tip('org.vinegarhq.Sober'); out.gameTip = await tip('org.supertuxproject.SuperTux'); out.toolTip = await tip('org.gnome.Calculator'); out.roblox = !!APPS.robloxapp;
+        await tip('org.vinegarhq.Sober');
         return out; })()`);
       await shot('11-flatpak');
       // NIGHTOS_TEST_FLATPAK=<installed app id> also opens that app and looks for its window in the taskbar.

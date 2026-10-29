@@ -105,11 +105,12 @@ async function runProgram(p) {
 function fromNightOS(e) { return !!(e.senderFrame && e.senderFrame.url.startsWith('nightos://app/')); }
 function setUpIpc() {
   const guard = fn => (e, ...a) => { if (!fromNightOS(e)) throw new Error('Not allowed'); return fn(...a); };
-  ipcMain.handle('native:info', guard(() => ({ desktop: true, version: app.getVersion(), electron: process.versions.electron, platform: process.platform, discord: steam.discordInstalled(), steam: !!steam.steamPath(), fullscreen: win ? win.isFullScreen() : false, startFullscreen: !!config.fullscreen })));
+  ipcMain.handle('native:info', guard(() => ({ desktop: true, version: app.getVersion(), electron: process.versions.electron, platform: process.platform, discord: steam.discordInstalled(), roblox: !!steam.robloxPlayer(), steam: !!steam.steamPath(), fullscreen: win ? win.isFullScreen() : false, startFullscreen: !!config.fullscreen })));
   ipcMain.handle('native:steamGames', guard(() => steam.listGames()));
   ipcMain.handle('native:launch', guard((kind, arg) => {
     const id = String(arg || '');
     if (kind === 'discord') return steam.launchDiscord();
+    if (kind === 'roblox') return steam.launchRoblox();
     if (kind === 'steam') { shell.openExternal('steam://open/main'); return true; }
     if (kind === 'bigpicture') { shell.openExternal('steam://open/bigpicture'); return true; }
     if (kind === 'steamGame' && /^\d{1,10}$/.test(id)) { shell.openExternal(`steam://rungameid/${id}`); return true; }
