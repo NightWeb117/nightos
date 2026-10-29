@@ -1,0 +1,18 @@
+{
+  "nightosTheme": 1,
+  "name": "Bat Nebula",
+  "accent": "#b48cff",
+  "style": "dark",
+  "wall": "nebula",
+  "look": {
+    "particles": "bats",
+    "skin": "synthwave",
+    "titleFont": "creepster",
+    "sound": "sting",
+    "cursor": "accent",
+    "wallAnim": true,
+    "term": {
+      "scheme": "grape"
+    }
+  }
+}

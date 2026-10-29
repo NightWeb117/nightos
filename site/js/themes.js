@@ -123,7 +123,7 @@ applyPreset = function (id, { keepWall = false } = {}) {
 
 /* ---------- the wallpaper engine: still canvas, optional picture or video, animated overlay ---------- */
 const WFX = { raf: 0, fx: null, media: null, sig: '' };
-const wallSig = () => { const L = LOOK(); return [CFG.wall, L.particles, L.wallAnim, L.anim].join('|'); };
+const wallSig = () => { const L = LOOK(); return [CFG.wall, L.particles, L.wallAnim, L.anim, L.wallInteract, WFX.music].join('|'); };
 const animAllowed = () => { const L = LOOK(); return L.wallAnim !== false && L.anim !== 'off'; };
 function drawCover(g, src, W, H) {
   const sw = src.videoWidth || src.naturalWidth || src.width, sh = src.videoHeight || src.naturalHeight || src.height; if (!sw || !sh) return;
@@ -136,25 +136,69 @@ function mirrorLock() {
   if (WFX.fx) g.drawImage(WFX.fx, 0, 0, lb.width, lb.height);
 }
 function stopWallAnim() { cancelAnimationFrame(WFX.raf); WFX.raf = 0; }
+/* ---------- the wallpaper reacts: things drift away from the pointer, clicks ripple, music makes it glow ---------- */
+const hexRgb = h => { const m = /^#?([0-9a-f]{6})$/i.exec(h || ''); const n = m ? parseInt(m[1], 16) : 0x78aeed; return `${n >> 16 & 255},${n >> 8 & 255},${n & 255}`; };
+WFX.taps = []; WFX.ptr = null; WFX.music = false; WFX.level = 0;
+const INTERACT = {
+  init: () => ({ rip: [], sparks: [] }),
+  idle: S => !S.rip.length && !S.sparks.length,
+  frame: (g, w, h, t, dt, S) => {
+    const u = U(w, h), rgb = hexRgb(accentHex());
+    for (const r of S.rip) { r.r += 320 * u * dt; r.a -= dt * 1.3; if (r.r > 0) { g.strokeStyle = `rgba(${rgb},${Math.max(0, r.a) * .8})`; g.lineWidth = 3 * u; g.beginPath(); g.arc(r.x, r.y, r.r, 0, 7); g.stroke(); } }
+    S.rip = S.rip.filter(r => r.a > 0);
+    g.globalCompositeOperation = 'lighter';
+    for (const p of S.sparks) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 260 * U(w, h) * dt; p.life -= dt; glowDot(g, p.x, p.y, 7 * u, rgb, Math.max(0, p.life) * .9); }
+    S.sparks = S.sparks.filter(p => p.life > 0);
+  },
+  tap: (S, x, y, w, h) => { const u = U(w, h); S.rip.push({ x, y, r: 4 * u, a: 1 }, { x, y, r: -40 * u, a: 1.2 }); for (let i = 0; i < 16; i++) { const a = Math.random() * 6.28, v = (120 + Math.random() * 260) * u; S.sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 120 * u, life: .6 + Math.random() * .5 }); } }
+};
+const MUSIC_FX = {
+  init: () => ({ lv: 0 }),
+  frame: (g, w, h, t, dt, S) => {
+    S.lv += ((WFX.level || 0) - S.lv) * .4; const L = S.lv; if (L < .02) return;
+    const rgb = hexRgb(accentHex()); g.globalCompositeOperation = 'lighter';
+    const gr = g.createLinearGradient(0, h, 0, h * (1 - .6 * L)); gr.addColorStop(0, `rgba(${rgb},${.55 * L})`); gr.addColorStop(1, `rgba(${rgb},0)`); g.fillStyle = gr; g.fillRect(0, h * (1 - .6 * L), w, h * .6 * L);
+    const vg = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * .45, w / 2, h / 2, Math.max(w, h) * .75); vg.addColorStop(0, `rgba(${rgb},0)`); vg.addColorStop(1, `rgba(${rgb},${.35 * L * L})`); g.fillStyle = vg; g.fillRect(0, 0, w, h);
+  }
+};
+const REPEL = ['p', 'j', 'balloons', 'leaves', 'm', 'b'];
 function startWallAnim() {
-  stopWallAnim(); WFX.sig = wallSig();
+  stopWallAnim(); WFX.sig = wallSig(); WFX.tap = null;
   const m = WFX.media; if (m && m.tagName === 'VIDEO') { if (animAllowed() && !document.hidden) m.play().catch(() => { }); else m.pause(); }
   const c = WFX.fx; if (!c) return;
   const w = c.width, h = c.height, g = c.getContext('2d'); g.clearRect(0, 0, w, h);
   const wall = !CFG.wall.startsWith('img:') && WALLS[CFG.wall], parts = PARTICLES[LOOK().particles], list = [];
-  if (animAllowed()) { if (wall && wall.anim) list.push(wall.anim); if (parts && parts.frame) list.push(parts); }
+  if (animAllowed()) {
+    if (wall && wall.anim) list.push(wall.anim); if (parts && parts.frame) list.push(parts);
+    if (WFX.music) list.push(MUSIC_FX); if (LOOK().wallInteract !== false) list.push(INTERACT);
+  }
   const video = m && m.tagName === 'VIDEO' && animAllowed();
   if (!list.length && !video) return;
-  const layers = list.map(a => ({ a, S: a.init ? a.init(w, h) : {} }));
-  let last = performance.now(), t = 0;
+  const layers = list.map(a => ({ a, S: a.init ? a.init(w, h) : {} })), sx = w / innerWidth, u = U(w, h);
+  let last = performance.now(), t = 0, blank = false;
+  WFX.tap = (cx, cy) => { for (const L of layers) { const f = L.a.tap; if (f) try { f(L.S, cx * sx, cy * sx, w, h); } catch (e) { } } };
   const tick = now => {
     WFX.raf = requestAnimationFrame(tick);
     const dt = (now - last) / 1000; if (dt < 1 / 31) return; last = now; const d = Math.min(dt, .1); t += d;
-    if (layers.length) { g.clearRect(0, 0, w, h); for (const L of layers) { g.save(); try { L.a.frame(g, w, h, t, d, L.S); } catch (e) { console.warn(e); } g.restore(); } }
+    // A still wallpaper with nothing to show skips drawing, so clicks cost nothing until they happen.
+    if (!video && layers.every(L => L.a.idle && L.a.idle(L.S))) { if (!blank) { g.clearRect(0, 0, w, h); blank = true; mirrorLock(); } return; }
+    blank = false;
+    const P = WFX.ptr && now - WFX.ptr.t < 2500 ? WFX.ptr : null, R = 130 * u;
+    if (P && LOOK().wallInteract !== false) for (const L of layers) for (const k of REPEL) {
+      const arr = L.S[k]; if (!Array.isArray(arr)) continue;
+      for (const q of arr) { if (!q || typeof q.x !== 'number') continue; const dx = q.x - P.x * sx, dy = q.y - P.y * sx, dd = Math.hypot(dx, dy); if (dd < R && dd > .1) { const f = (1 - dd / R) * 320 * u * d; q.x += dx / dd * f; q.y += dy / dd * f; } }
+    }
+    g.clearRect(0, 0, w, h); for (const L of layers) { g.save(); try { L.a.frame(g, w, h, t, d, L.S); } catch (e) { console.warn(e); } g.restore(); }
     mirrorLock();
   };
   WFX.raf = requestAnimationFrame(tick);
 }
+document.addEventListener('pointermove', e => { if (SYSTEM.state === 'desktop' || SYSTEM.state === 'lock') WFX.ptr = { x: e.clientX, y: e.clientY, t: performance.now() }; }, { passive: true });
+document.addEventListener('pointerdown', e => {
+  if (SYSTEM.state !== 'desktop' || !WFX.tap || e.button !== 0) return;
+  const t = e.target; if (!(t.closest('#wallhost') || (t.closest('#desk') && !t.closest('.di, .wg, button')))) return;
+  WFX.tap(e.clientX, e.clientY);
+}, true);
 document.addEventListener('visibilitychange', () => { if (document.hidden) { stopWallAnim(); if (WFX.media && WFX.media.pause) WFX.media.pause(); } else startWallAnim(); });
 function mediaWall(box, c, id) {
   BLOBS.get(id).then(b => {
@@ -291,13 +335,14 @@ TP.render = () => {
     <h4>Your themes</h4><div class="th-grid">${myThemes().map(t => bigCard(t.id, t, CFG.theme === t.id)).join('')}<button class="th-card th-new" data-newtheme>${sym('plus')}<b>Create a theme</b><small>From your own picture, GIF or video</small></button></div>
     <h4>Classic themes</h4><div class="th-grid">${ent.filter(([, p]) => !p.animated).map(([id, p]) => bigCard(id, p, CFG.theme === id)).join('')}</div>
     <p style="color:var(--fg-dim);margin:0;font-size:13px">A theme sets the wallpaper and its animation, colors, fonts, window style, pointer, terminal colors and sounds together. You can change any part afterwards.${CFG.theme === 'custom' ? ' <b style="color:var(--fg)">You are using a custom look.</b>' : ''}</p>
-    <h4>Motion and extras</h4><div class="grp">${ui.row('Animated wallpaper', 'Turn off to save battery. Windows Settings › Animation speed › Off also stops it', ui.sw('wallAnim', L.wallAnim !== false))}${ui.row('Floating effect', 'Drifts over any wallpaper, including your own', ui.sel('particles', L.particles || 'none', Object.entries(PARTICLES).map(([k, p]) => [k, p.name])))}${ui.row('Window style', 'Title bar colors and glow', ui.sel('skin', L.skin || 'none', Object.entries(SKINS).map(([k, s]) => [k, s.name])))}${ui.row('Title font', 'Used for window titles, widgets and the lock screen clock', ui.sel('titleFont', L.titleFont || '', Object.entries(TITLE_FONTS).map(([k, f]) => [k, f.name])))}${ui.row('Themed pointer', 'A pointer in your accent color', ui.sw('cursor', L.cursor === 'accent'))}${ui.row('Theme sounds', 'Login jingle and alert sound', ui.sel('sound', L.sound || '', [['', 'Standard'], ...Object.entries(KIT).map(([k, s]) => [k, s.name])]))}</div>
+    <h4>Motion and extras</h4><div class="grp">${ui.row('Animated wallpaper', 'Turn off to save battery. Windows Settings › Animation speed › Off also stops it', ui.sw('wallAnim', L.wallAnim !== false))}${ui.row('Wallpaper reacts to you', 'Things drift away from the pointer, and clicking the desktop makes ripples', ui.sw('wallInteract', L.wallInteract !== false))}${ui.row('Floating effect', 'Drifts over any wallpaper, including your own', ui.sel('particles', L.particles || 'none', Object.entries(PARTICLES).map(([k, p]) => [k, p.name])))}${ui.row('Window style', 'Title bar colors and glow', ui.sel('skin', L.skin || 'none', Object.entries(SKINS).map(([k, s]) => [k, s.name])))}${ui.row('Title font', 'Used for window titles, widgets and the lock screen clock', ui.sel('titleFont', L.titleFont || '', Object.entries(TITLE_FONTS).map(([k, f]) => [k, f.name])))}${ui.row('Themed pointer', 'A pointer in your accent color', ui.sw('cursor', L.cursor === 'accent'))}${ui.row('Theme sounds', 'Login jingle and alert sound', ui.sel('sound', L.sound || '', [['', 'Standard'], ...Object.entries(KIT).map(([k, s]) => [k, s.name])]))}</div>
     <h4>Share your look</h4><div class="grp">${ui.row('Export theme', 'Saves your whole look as a .json file, with your own picture or video inside', '<button class="hbtn" data-exp style="background:var(--press)">Export</button>')}${ui.row('Import theme', 'Paste a theme someone shared, or choose a .json file', '<span style="display:flex;gap:8px"><button class="hbtn" data-imp-paste style="background:var(--press)">Paste</button><button class="hbtn" data-imp-file style="background:var(--press)">Choose File</button></span>')}${ui.row('Reset everything', 'Go back to the Tidal defaults', '<button class="hbtn destr" data-reset>Reset</button>')}</div>`;
 };
 TP.bind = (main, ctx) => {
   resetBind(main, ctx); bindLookControls(main, ctx.rerender);
   // the themed pointer is a two-way switch over a string setting
   const cs = $('[data-look-sw="cursor"]', main); if (cs) cs.onclick = () => { setLook('cursor', LOOK().cursor === 'accent' ? 'default' : 'accent'); ctx.rerender(); };
+  const wi = $('[data-look-sw="wallInteract"]', main); if (wi) wi.onclick = () => { setLook('wallInteract', LOOK().wallInteract === false); ctx.rerender(); };
   const ws = $('[data-look-sw="wallAnim"]', main); if (ws) ws.onclick = () => { setLook('wallAnim', LOOK().wallAnim === false); ctx.rerender(); };
   $('[data-newtheme]', main).onclick = () => { DRAFT = null; ctx.win.show('maketheme'); };
   main.querySelectorAll('[data-deltheme]').forEach(x => {

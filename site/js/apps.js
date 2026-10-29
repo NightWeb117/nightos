@@ -20,12 +20,13 @@ function FilesApp(start = HOME) {
   win.hr.append(hbtn('search', 'Search', () => { const q = el('<input class="entry no-drag" placeholder="Search current folder" style="width:200px;height:32px" aria-label="Search">'); pathbar.replaceWith(q); q.focus(); q.oninput = () => { S.q = q.value.toLowerCase(); render(); }; q.onkeydown = e => { if (e.key === 'Escape') { S.q = ''; q.replaceWith(pathbar); render(); } }; q.onblur = () => { if (!q.value) { S.q = ''; q.replaceWith(pathbar); render(); } }; }), viewB, menuB);
   win.body.innerHTML = `<div class="fm"><nav class="fm-side" aria-label="Places"></nav><div class="fm-main"><div class="fm-banner" hidden></div><div class="fm-items" tabindex="0" role="listbox" aria-multiselectable="true"></div><div class="fm-status"></div></div></div>`;
   const side = $('.fm-side', win.body), items = $('.fm-items', win.body), status = $('.fm-status', win.body), banner = $('.fm-banner', win.body);
-  const PLACES = [['Recent', null, 'reload'], ['Starred', null, 'star'], ['-'], ['Home', HOME, 'home'], ['Desktop', HOME + '/Desktop', 'desktop'], ['Documents', HOME + '/Documents', 'doc'], ['Downloads', HOME + '/Downloads', 'download'], ['Music', HOME + '/Music', 'music'], ['Pictures', HOME + '/Pictures', 'pic'], ['Videos', HOME + '/Videos', 'video'], ['Trash', TRASH, 'trash'], ['-'], ['Other Locations', '/', 'drive']];
+  const PLACES = [['Recent', null, 'reload'], ['Starred', null, 'star'], ['-'], ['Home', HOME, 'home'], ['Desktop', HOME + '/Desktop', 'desktop'], ['Documents', HOME + '/Documents', 'doc'], ['Downloads', HOME + '/Downloads', 'download'], ['Music', HOME + '/Music', 'music'], ['Pictures', HOME + '/Pictures', 'pic'], ['Videos', HOME + '/Videos', 'video'], ['Trash', TRASH, 'trash'], ...(typeof EXTRA_PLACES === 'function' ? EXTRA_PLACES() : []), ['-'], ['Other Locations', '/', 'drive']];
   function go(p, hist) {
     const n = getNode(p); if (!n || n.type !== 'dir') return;
     if (!canRead(p, false)) return notify('files', 'Could not open “' + splitPath(p)[1] + '”', 'You do not have the permissions necessary to view the contents.');
     if (!hist && p !== S.path) { S.back.push(S.path); S.fwd = []; }
     S.path = p; S.sel.clear(); render(); items.scrollTop = 0;
+    if (typeof onDirOpen === 'function') onDirOpen(p);
   }
   win.go = go;
   const entries = () => {

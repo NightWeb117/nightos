@@ -146,7 +146,7 @@ function SettingsApp(page = 'wifi') {
   const EXTRA = Object.fromEntries((typeof SETTINGS_EXTRA !== 'undefined' ? SETTINGS_EXTRA : []).map(x => [x.id, x]));
   const PAGES = [['wifi', 'Wi‑Fi', 'wifi'], ['bt', 'Bluetooth', 'bt'], ['displays', 'Displays', 'display'], ['sound', 'Sound', 'vol'], ['power', 'Power', 'battery'], ['-'],
     ['theme', 'Global Theme', 'palette'], ['maketheme', 'Create Theme', 'plus'], ['colors', 'Colors & Fonts', 'palette'], ['background', 'Wallpaper', 'pic'], ['panel', 'Panel & Dock', 'desktop'], ['windows', 'Windows', 'grid'], ['desktopcfg', 'Desktop & Widgets', 'desktop'], ['terminalcfg', 'Terminal', 'term'], ['-'],
-    ['notifications', 'Notifications', 'bell'], ['snapshots', 'Snapshots', 'restart'], ['linuxvm', 'Linux VM', 'term'], ['desktopapp', 'Desktop App', 'desktop'], ['about', 'System', 'info']].filter(([id]) => id === '-' || !['theme', 'maketheme', 'colors', 'panel', 'windows', 'desktopcfg', 'terminalcfg', 'snapshots', 'linuxvm', 'desktopapp'].includes(id) || EXTRA[id]);
+    ['notifications', 'Notifications', 'bell'], ['snapshots', 'Snapshots', 'restart'], ['sync', 'Sync', 'reload'], ['linuxvm', 'Linux VM', 'term'], ['desktopapp', 'Desktop App', 'desktop'], ['about', 'System', 'info']].filter(([id]) => id === '-' || !['theme', 'maketheme', 'sync', 'colors', 'panel', 'windows', 'desktopcfg', 'terminalcfg', 'snapshots', 'linuxvm', 'desktopapp'].includes(id) || EXTRA[id]);
   if (page === 'appearance') page = EXTRA.colors ? 'colors' : 'appearance';
   win.body.innerHTML = `<div class="st"><nav class="st-side" aria-label="Settings sections"></nav><div class="st-main"><div class="st-page"></div></div></div>`;
   const side = $('.st-side', win.body), main = $('.st-page', win.body);

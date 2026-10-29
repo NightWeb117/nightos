@@ -1,0 +1,44 @@
+name: Theme submission
+description: Share a NightOS theme in the App Center theme gallery
+title: "Theme: "
+labels: ["theme submission"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing! In NightOS, open Settings › Global Theme and click **Export** to get your theme's .json file, then attach it below.
+        Only share pictures and videos you made or have permission to share.
+  - type: input
+    id: name
+    attributes:
+      label: Theme name
+    validations:
+      required: true
+  - type: input
+    id: author
+    attributes:
+      label: Your name or nickname
+      description: Shown as "by …" in the gallery
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Short description
+      description: One sentence about the theme
+    validations:
+      required: true
+  - type: textarea
+    id: file
+    attributes:
+      label: Theme file
+      description: Drag your nightos-theme.json file here. If it's big (it has a video inside), zip it first.
+    validations:
+      required: true
+  - type: checkboxes
+    id: rights
+    attributes:
+      label: Permission
+      options:
+        - label: I made this theme, or I have permission to share everything in it.
+          required: true

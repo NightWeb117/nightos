@@ -7,6 +7,9 @@
 <meta name="description" content="A simulated Linux desktop: NightOS 24.10 Umbra">
 <link rel="stylesheet" href="vendor/xterm/xterm.css">
 <link rel="icon" href="favicon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0c1615">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cantarell:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -474,6 +477,40 @@ input.entry:focus{box-shadow:0 0 0 2px var(--accent)}
 .wb.term.ts-retro,.ts-card.ts-retro{--term-bg:#12052a;--term-fg:#f8e6ff;--term-dim:#7a5aa0}.ts-retro .c-g{color:#ff3fbf}.ts-retro .c-b{color:#4de4ff}.ts-retro .c-c{color:#ffe76b}
 .wb.term.ts-abyss,.ts-card.ts-abyss{--term-bg:#03141f;--term-fg:#d4f3ff;--term-dim:#3f6a80}.ts-abyss .c-g{color:#4dffd2}.ts-abyss .c-b{color:#3fd0ff}.ts-abyss .c-c{color:#b48cff}
 
+/* ---------- media player 2, clipboard, recorder, arcade, Windows taskbar items ---------- */
+.mp2{justify-content:flex-end;gap:10px;padding:0}
+.mp2 .mp-viz{flex:1;width:100%;min-height:0;display:block}
+.mp2 .mp-art{position:absolute;top:18px;left:0;right:0;pointer-events:none}.mp2 .mp-art b{font-size:18px}.mp2 .mp-art small{color:#9a9caa}
+.mp2 video{flex:1;width:100%}
+.mp2 .mp-ctl{width:100%;display:flex;justify-content:center;padding:10px 14px 14px;background:linear-gradient(transparent,rgba(0,0,0,.5))}.mp2 .mp-ctl audio{width:min(560px,100%)}.mp2 .mp-ctl video{display:none}
+.mp2 .mp-msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+.wb:has(.mp2){position:relative}
+.hbtn.on{color:var(--accent)}
+#cliphist{position:absolute;z-index:9600;left:50%;bottom:calc(var(--res-bottom,0px) + 16px);transform:translateX(-50%);width:min(420px,calc(100vw - 24px));max-height:min(520px,70vh);display:flex;flex-direction:column;border-radius:16px;background:rgba(24,26,32,.94);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);color:#eef1f3;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 18px 50px rgba(0,0,0,.5);outline:none;animation:winIn .14s ease}
+.ch-hd{display:flex;align-items:center;gap:4px;padding:10px 10px 6px 16px}.ch-hd b{font-size:15px}
+.ch-list{overflow:auto;padding:4px 8px;display:flex;flex-direction:column;gap:6px;min-height:60px}
+.ch-it{display:flex;align-items:flex-start;gap:4px;padding:10px 6px 10px 12px;border-radius:10px;background:rgba(255,255,255,.06);cursor:default}
+.ch-it span{flex:1;white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.4;max-height:5.6em;overflow:hidden}
+.ch-it.sel,.ch-it:hover{background:color-mix(in srgb,var(--accent) 26%,rgba(255,255,255,.04))}
+.ch-it .hbtn{height:26px;min-width:26px;padding:0;opacity:.6}.ch-it .hbtn.on{opacity:1}.ch-it .hbtn .sym{width:14px;height:14px}
+.ch-empty{margin:20px 0;text-align:center;color:#9aa0b0;font-size:13px}
+.ch-ft{display:flex;align-items:center;justify-content:space-between;padding:8px 14px 12px;color:#9aa0b0;font-size:12px}
+#recpill{position:absolute;z-index:9700;top:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;height:32px;padding:0 6px 0 12px;border-radius:99px;background:rgba(20,20,24,.9);color:#fff;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+#recpill i{width:10px;height:10px;border-radius:9px;background:#ef4b5c;animation:recb 1s infinite}#recpill b{background:#ef4b5c;border-radius:99px;padding:3px 10px;font-size:12px}
+@keyframes recb{50%{opacity:.25}}
+.arc{flex:1;min-height:0;display:flex;background:#0a0b14;color:#e9ecf5}
+.arc-menu{flex:1;overflow:auto;padding:22px}.arc-menu h2{margin:0 0 16px;font-family:var(--font-title,inherit)}
+.arc-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.arc-card{display:flex;flex-direction:column;gap:6px;text-align:left;padding:10px;border-radius:14px;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.arc-card:hover{box-shadow:inset 0 0 0 2px var(--accent)}.arc-card canvas{width:100%;border-radius:9px;aspect-ratio:24/13}.arc-card small{color:#9aa0b0;line-height:1.35}.arc-card span{font-size:12px;color:var(--accent)}
+.arc-game{flex:1;position:relative;display:flex;flex-direction:column;min-height:0}
+.arc-hud{height:34px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-weight:700;font-variant-numeric:tabular-nums}.arc-hud span:nth-child(2){color:#ff8fa0}
+.arc-game canvas{flex:1;outline:none;display:block}
+.arc-over{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(5,6,12,.72)}.arc-over b{font-size:28px;font-family:var(--font-title,inherit)}.arc-over div{display:flex;gap:8px}
+.wt img{width:calc(var(--panel-h)*.55);height:calc(var(--panel-h)*.55);object-fit:contain}
+.dk.wt img{width:40px;height:40px;object-fit:contain}
+.wt-sep{width:1px;align-self:stretch;margin:8px 4px;background:rgba(255,255,255,.15)}
+.dk-sep.wt-sep{margin:0 4px}
 /* ---------- animated themes: wallpaper layers, window skins, title fonts, themed pointer ---------- */
 .wall-media{object-fit:cover}.wall-fx{pointer-events:none}
 .hb-title{font-family:var(--font-title,inherit);font-weight:var(--title-w,700);font-size:var(--title-size,14px);letter-spacing:var(--title-ls,0)}
@@ -795,5 +832,10 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
 <script src="js/system.js"></script>
 <script src="js/native.js"></script>
 <script src="js/winapps.js"></script>
+<script src="js/extras.js"></script>
+<script src="js/arcade.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/winfs.js"></script>
+<script src="js/wintasks.js"></script>
 </body>
 </html>

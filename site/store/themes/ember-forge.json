@@ -1,0 +1,18 @@
+{
+  "nightosTheme": 1,
+  "name": "Ember Forge",
+  "accent": "#ff8a3d",
+  "style": "dark",
+  "wall": "dusk",
+  "look": {
+    "particles": "embers",
+    "skin": "slasher",
+    "titleFont": "exo",
+    "sound": "synth",
+    "cursor": "accent",
+    "wallAnim": true,
+    "term": {
+      "scheme": "ember"
+    }
+  }
+}

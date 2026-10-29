@@ -15,6 +15,13 @@ program lets it do things a web page can't:
   Programs**, with their real icons. Add any other program with **Add Program…**,
   or drag it from File Explorer onto NightOS. The first time each one runs, a
   Windows dialog asks you to confirm.
+- **Your Windows folders:** Files › Windows Folders opens your real Desktop,
+  Documents, Downloads, Pictures, Music and Videos. NightOS asks in a Windows dialog
+  before using each one. Deleted things go to the Recycle Bin, and NightOS never
+  writes programs or scripts there.
+- **Running programs in the taskbar:** windows open on your PC show up in the NightOS
+  panel or dock. Click to switch or minimize, right-click to close.
+- **Screen Recorder:** records the NightOS window or the whole screen, with sound.
 - **Updates:** the installed app checks GitHub Releases, downloads new versions in
   the background and installs them when NightOS restarts. The portable `.exe`
   can't replace itself, so it tells you when a new version is out and offers the

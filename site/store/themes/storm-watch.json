@@ -1,0 +1,18 @@
+{
+  "nightosTheme": 1,
+  "name": "Storm Watch",
+  "accent": "#8fb4ff",
+  "style": "dark",
+  "wall": "umbra",
+  "look": {
+    "particles": "rain",
+    "skin": "abyss",
+    "titleFont": "",
+    "sound": "bloop",
+    "cursor": "accent",
+    "wallAnim": true,
+    "term": {
+      "scheme": "night"
+    }
+  }
+}

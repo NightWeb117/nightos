@@ -1,7 +1,7 @@
 'use strict';
 // NightOS desktop: serves the website from disk over a private nightos:// scheme and gives the
 // page a small, fixed set of native actions (see preload.js). Nothing else on the PC is reachable.
-const { app, BrowserWindow, protocol, ipcMain, shell, session, Menu, dialog, nativeImage } = require('electron');
+const { app, BrowserWindow, protocol, ipcMain, shell, session, Menu, dialog, nativeImage, desktopCapturer } = require('electron');
 const path = require('path'), fs = require('fs'), { Readable } = require('stream');
 const steam = require('./steam');
 
@@ -129,10 +129,38 @@ function setUpIpc() {
     const out = []; for (const p of r.filePaths) { try { out.push(await describeProgram(p)); } catch (e) { } } return out;
   }));
   ipcMain.handle('native:forgetApprovals', guard(() => { config.approvedPrograms = []; saveConfig(config); return true; }));
+  // Your Windows folders (winfs.js) and the program windows open on your PC (wintasks.js)
+  ipcMain.handle('native:winRoots', guard(() => folders.roots()));
+  ipcMain.handle('native:winGrant', guard(n => folders.grant(String(n))));
+  ipcMain.handle('native:winForgetFolders', guard(() => folders.forget()));
+  ipcMain.handle('native:winList', guard(p => folders.list(p)));
+  ipcMain.handle('native:winReadText', guard(p => folders.readText(p)));
+  ipcMain.handle('native:winReadBytes', guard(p => folders.readBytes(p)));
+  ipcMain.handle('native:winWriteText', guard((p, t) => folders.writeText(p, t)));
+  ipcMain.handle('native:winWriteBytes', guard((p, b) => folders.writeBytes(p, b)));
+  ipcMain.handle('native:winMkdir', guard(p => folders.mkdir(p)));
+  ipcMain.handle('native:winRename', guard((a, b) => folders.rename(a, b)));
+  ipcMain.handle('native:winCopy', guard((a, b) => folders.copy(a, b)));
+  ipcMain.handle('native:winTrash', guard(p => folders.trash(p)));
+  ipcMain.handle('native:winWindows', guard(() => tasks.list()));
+  ipcMain.handle('native:winWindowAction', guard((h, what) => tasks.act(h, String(what))));
+  ipcMain.handle('native:setCaptureTarget', guard(k => { captureTarget = k === 'screen' ? 'screen' : 'nightos'; return captureTarget; }));
   ipcMain.handle('native:updateState', guard(() => updates.state()));
   ipcMain.handle('native:updateCheck', guard(() => { updates.check(); return true; }));
   ipcMain.handle('native:updateInstall', guard(() => updates.install()));
   ipcMain.handle('native:setAutoUpdate', guard(on => updates.setAuto(on)));
+}
+let folders = null, tasks = null, captureTarget = 'nightos';
+// Screen Recorder: NightOS's page can record its own window or the whole screen, with the PC's sound.
+function setUpCapture() {
+  session.defaultSession.setDisplayMediaRequestHandler((req, cb) => {
+    if (!req.frame || !req.frame.url.startsWith('nightos://app/')) return cb({});
+    desktopCapturer.getSources({ types: ['screen', 'window'] }).then(srcs => {
+      const own = win && srcs.find(s => s.id === win.getMediaSourceId()), screen = srcs.find(s => s.id.startsWith('screen:'));
+      const src = captureTarget === 'screen' ? screen : own || screen;
+      cb(src ? { video: src, audio: req.audioRequested ? 'loopback' : undefined } : {});
+    }).catch(() => cb({}));
+  });
 }
 let updates = null;
 function setUpUpdates() {
@@ -170,6 +198,7 @@ app.on('web-contents-created', (e, contents) => {
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
-  app.whenReady().then(() => { config = loadConfig(); handleProtocol(); setUpWebSession(); setUpUpdates(); setUpIpc(); createWindow(); });
+  app.whenReady().then(() => { config = loadConfig(); handleProtocol(); setUpWebSession(); setUpUpdates(); setUpCapture(); folders = require('./winfs')({ config, saveConfig, getWin: () => win }); tasks = require('./wintasks')(); setUpIpc(); createWindow(); });
+  app.on('will-quit', () => { if (tasks) tasks.stop(); });
   app.on('window-all-closed', () => app.quit());
 }

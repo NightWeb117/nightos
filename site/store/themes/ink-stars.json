@@ -1,0 +1,18 @@
+{
+  "nightosTheme": 1,
+  "name": "Ink & Stars",
+  "accent": "#f2cc5b",
+  "style": "dark",
+  "wall": "ink",
+  "look": {
+    "particles": "stars",
+    "skin": "accent",
+    "titleFont": "cinzel",
+    "sound": "",
+    "cursor": "accent",
+    "wallAnim": true,
+    "term": {
+      "scheme": "night"
+    }
+  }
+}

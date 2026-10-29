@@ -56,7 +56,7 @@ CFG.snapshots = CFG.snapshots || [];
 function usedBlobs() { const s = new Set(); const walk = n => { if (n.type === 'dir') Object.values(n.children).forEach(walk); else if (n.blob) s.add(n.blob); }; walk(FS); CFG.installed.forEach(a => a.blob && s.add(a.blob)); return [...s]; }
 async function createSnapshot(name, auto = false) {
   const id = 's' + Date.now().toString(36), cfg = { ...CFG }; delete cfg.snapshots;
-  const json = JSON.stringify({ v: 1, fs: FS, cfg, hist: store.get('hist', []), pkgs: [...INSTALLED] });
+  const json = JSON.stringify({ v: 1, fs: typeof stripWin === 'function' ? stripWin(FS) : FS, cfg, hist: store.get('hist', []), pkgs: [...INSTALLED] });
   await BLOBS.put('snap:' + id, new Blob([json], { type: 'application/json' }));
   CFG.snapshots.unshift({ id, name, time: Date.now(), size: json.length, auto, blobs: usedBlobs() });
   if (auto) { const autos = CFG.snapshots.filter(s => s.auto); for (const old of autos.slice(3)) await deleteSnapshot(old.id, true); }

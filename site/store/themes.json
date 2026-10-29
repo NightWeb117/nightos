@@ -1,0 +1,64 @@
+{
+  "themes": [
+    {
+      "id": "winter-aurora",
+      "name": "Winter Aurora",
+      "author": "NightOS",
+      "summary": "Snow falling under green northern lights, with a frosty glass look.",
+      "wall": "aurora",
+      "accent": "#9fe7ff",
+      "animated": true,
+      "file": "themes/winter-aurora.json"
+    },
+    {
+      "id": "ember-forge",
+      "name": "Ember Forge",
+      "author": "NightOS",
+      "summary": "Sparks rising from a warm sunset. Orange glow on every window.",
+      "wall": "dusk",
+      "accent": "#ff8a3d",
+      "animated": true,
+      "file": "themes/ember-forge.json"
+    },
+    {
+      "id": "storm-watch",
+      "name": "Storm Watch",
+      "author": "NightOS",
+      "summary": "Rain sweeping over moonlit mountains. Cool blue and calm.",
+      "wall": "umbra",
+      "accent": "#8fb4ff",
+      "animated": true,
+      "file": "themes/storm-watch.json"
+    },
+    {
+      "id": "firefly-tide",
+      "name": "Firefly Tide",
+      "author": "NightOS",
+      "summary": "Fireflies drifting over glowing teal water.",
+      "wall": "tidal",
+      "accent": "#c8ff6b",
+      "animated": true,
+      "file": "themes/firefly-tide.json"
+    },
+    {
+      "id": "bat-nebula",
+      "name": "Bat Nebula",
+      "author": "NightOS",
+      "summary": "Bats flapping across a purple galaxy. Spooky, but cute.",
+      "wall": "nebula",
+      "accent": "#b48cff",
+      "animated": true,
+      "file": "themes/bat-nebula.json"
+    },
+    {
+      "id": "ink-stars",
+      "name": "Ink & Stars",
+      "author": "NightOS",
+      "summary": "A quiet dark desk with twinkling stars and gold accents.",
+      "wall": "ink",
+      "accent": "#f2cc5b",
+      "animated": true,
+      "file": "themes/ink-stars.json"
+    }
+  ]
+}

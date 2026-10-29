@@ -1,0 +1,18 @@
+{
+  "nightosTheme": 1,
+  "name": "Firefly Tide",
+  "accent": "#c8ff6b",
+  "style": "dark",
+  "wall": "tidal",
+  "look": {
+    "particles": "fireflies",
+    "skin": "accent",
+    "titleFont": "mplus",
+    "sound": "chime",
+    "cursor": "accent",
+    "wallAnim": true,
+    "term": {
+      "scheme": "tidal"
+    }
+  }
+}

@@ -56,6 +56,7 @@ WALLS.sakura = {
     branch(w + 20 * u, h * .02, Math.PI - .3, w * .12, 12 * u, 1);
   },
   anim: {
+    tap: (S, x, y) => { for (const p of S.p.slice(0, 14)) { const a = Math.random() * 6.28, d = Math.random() * 40; p.x = x + Math.cos(a) * d; p.y = y + Math.sin(a) * d; } },
     init: (w, h) => { const r = rng(5), L = cityLayout(7, w, h, h * .93, .06, .2, .32); return { p: Array.from({ length: 70 }, () => ({ x: r() * w, y: r() * h, s: .7 + r() * 1.1, rot: r() * 6, vr: (r() - .5) * 3, ph: r() * 6.28 })), m: Array.from({ length: 30 }, () => ({ x: r() * w, y: h * (.5 + r() * .5), ph: r() * 6.28 })), wins: L.wins.filter(() => r() < .12) }; },
     frame: (g, w, h, t, dt, S) => {
       const u = U(w, h);
@@ -96,6 +97,7 @@ WALLS.webcity = {
     for (let k = 1; k <= W.rings; k++) { ctx.beginPath(); W.spokes.forEach((s, i) => { const d = s.len * k / (W.rings + 1), x = W.cx + Math.cos(s.a) * d, y = W.cy + Math.sin(s.a) * d; if (!i) ctx.moveTo(x, y); else { const p = W.spokes[i - 1], pd = p.len * k / (W.rings + 1), px = W.cx + Math.cos(p.a) * pd, py = W.cy + Math.sin(p.a) * pd, mx2 = (px + x) / 2, my2 = (py + y) / 2; ctx.quadraticCurveTo(mx2 + (W.cx - mx2) * .06, my2 + (W.cy - my2) * .06, x, y); } }); ctx.stroke(); }
   },
   anim: {
+    tap: S => { S.streak = null; S.next = 0; },
     init: (w, h) => { const r = rng(3), near = cityLayout(33, w, h, h, .12, .34, .26); return { W: webGeom(w, h), beams: [{ x: w * .32, ph: 0 }, { x: w * .66, ph: 2.2 }], wins: near.wins.filter(() => r() < .08), streak: null, next: 2 }; },
     frame: (g, w, h, t, dt, S) => {
       const u = U(w, h);
@@ -139,6 +141,7 @@ WALLS.slasher = {
     for (const L of S.lanterns) { ctx.fillStyle = '#e8650f'; ctx.beginPath(); ctx.ellipse(L.x, L.y - L.s * .7, L.s, L.s * .75, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#ffd35a'; const s = L.s; ctx.beginPath(); ctx.moveTo(L.x - s * .55, L.y - s * .95); ctx.lineTo(L.x - s * .2, L.y - s * .95); ctx.lineTo(L.x - s * .38, L.y - s * .65); ctx.fill(); ctx.beginPath(); ctx.moveTo(L.x + s * .55, L.y - s * .95); ctx.lineTo(L.x + s * .2, L.y - s * .95); ctx.lineTo(L.x + s * .38, L.y - s * .65); ctx.fill(); ctx.fillRect(L.x - s * .5, L.y - s * .45, s, s * .14); }
   },
   anim: {
+    tap: st => { st.next = 0; },
     init: (w, h) => { const r = rng(8); return { S: suburb(w, h), fog: Array.from({ length: 22 }, () => ({ x: r() * w, y: h * (.72 + r() * .26), s: .6 + r() * 1.2, v: 6 + r() * 18 })), leaves: Array.from({ length: 22 }, () => ({ x: r() * w, y: r() * h, ph: r() * 6.28, s: .6 + r() })), flash: 0, next: 6, lampOff: 0 }; },
     frame: (g, w, h, t, dt, st) => {
       const u = U(w, h), S = st.S;
@@ -192,6 +195,7 @@ WALLS.carnival = {
     ctx.strokeStyle = 'rgba(30,12,20,.9)'; ctx.lineWidth = 1.5 * u; let prev = null; for (const b of C.bulbs) { if (prev && Math.hypot(b.x - prev.x, b.y - prev.y) < w * .2) { ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(b.x, b.y); ctx.stroke(); } prev = b; }
   },
   anim: {
+    tap: S => { S.allOn = .9; S.nextEyes = Math.min(S.nextEyes, .3); },
     init: (w, h) => { const r = rng(4); return { C: carnival(w, h), balloons: Array.from({ length: 11 }, () => ({ x: r() * w, y: h * (.4 + r() * .8), s: .8 + r() * .5, ph: r() * 6.28, v: 14 + r() * 16 })), eyes: 0, nextEyes: 5 }; },
     frame: (g, w, h, t, dt, S) => {
       const C = S.C, u = C.u, W = C.wheel, rot = t * .12, cars = 10;
@@ -201,7 +205,7 @@ WALLS.carnival = {
       g.globalCompositeOperation = 'lighter';
       for (let i = 0; i < cars; i++) { const a = rot + i / cars * Math.PI * 2, x = W.x + Math.cos(a) * W.R, y = W.y + Math.sin(a) * W.R, on = (i + Math.floor(t * 2)) % 2 === 0, R = 16 * u; const gr = g.createRadialGradient(x, y, 0, x, y, R); gr.addColorStop(0, on ? 'rgba(255,80,90,.9)' : 'rgba(255,210,140,.6)'); gr.addColorStop(1, 'rgba(255,120,120,0)'); g.fillStyle = gr; g.fillRect(x - R, y - R, R * 2, R * 2); }
       const step = Math.floor(t * 7);
-      for (const b of C.bulbs) { const on = (b.i + step) % 3 === 0, R = (on ? 9 : 5) * u; const gr = g.createRadialGradient(b.x, b.y, 0, b.x, b.y, R); gr.addColorStop(0, on ? 'rgba(255,220,150,.95)' : 'rgba(255,170,90,.35)'); gr.addColorStop(1, 'rgba(255,170,90,0)'); g.fillStyle = gr; g.fillRect(b.x - R, b.y - R, R * 2, R * 2); }
+      S.allOn = Math.max(0, (S.allOn || 0) - dt); for (const b of C.bulbs) { const on = S.allOn > 0 || (b.i + step) % 3 === 0, R = (on ? 9 : 5) * u; const gr = g.createRadialGradient(b.x, b.y, 0, b.x, b.y, R); gr.addColorStop(0, on ? 'rgba(255,220,150,.95)' : 'rgba(255,170,90,.35)'); gr.addColorStop(1, 'rgba(255,170,90,0)'); g.fillStyle = gr; g.fillRect(b.x - R, b.y - R, R * 2, R * 2); }
       S.nextEyes -= dt; if (S.nextEyes <= 0) { S.eyes = 2.4; S.nextEyes = 8 + Math.random() * 8; }
       if (S.eyes > 0) { S.eyes -= dt; const blink = Math.sin(S.eyes * 9) > -.9 ? 1 : 0, ex = C.tent.x, ey = C.base - C.tent.h * .18; for (const dx of [-9, 9]) { const R = 6 * u, gr = g.createRadialGradient(ex + dx * u, ey, 0, ex + dx * u, ey, R); gr.addColorStop(0, `rgba(255,40,40,${blink * Math.min(1, S.eyes)})`); gr.addColorStop(1, 'rgba(255,40,40,0)'); g.fillStyle = gr; g.fillRect(ex + dx * u - R, ey - R, R * 2, R * 2); } }
       g.globalCompositeOperation = 'source-over';

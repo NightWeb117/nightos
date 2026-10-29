@@ -9,7 +9,7 @@ const LOOK_DEFAULT = {
   dockPos: 'bottom', dockSize: 44,
   font: 'noto', radius: 10, btnSide: 'right', btnStyle: 'glyph', titleAlign: 'center', shadow: .5, anim: 'normal',
   desktops: 4, deskIcons: true, deskIconSize: 52, wallFx: 'none', hotCorner: true,
-  wallAnim: true, particles: 'none', skin: 'none', titleFont: '', cursor: 'default', sound: '',
+  wallAnim: true, wallInteract: true, particles: 'none', skin: 'none', titleFont: '', cursor: 'default', sound: '',
   widgets: [{ id: 'w1', type: 'clock', x: -330, y: 56 }, { id: 'w2', type: 'sysmon', x: -330, y: 236 }],
   term: { scheme: 'tidal', prompt: 'fish', fastfetch: true, suggest: true, size: 13.5 }
 };
