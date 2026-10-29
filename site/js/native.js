@@ -126,6 +126,7 @@ if (NATIVE) SETTINGS_EXTRA.push({
   render: () => `<div class="grp" style="padding:16px 18px;display:flex;gap:14px;align-items:center">${LOGO.replace('<svg', '<svg style="width:48px;height:48px;color:var(--accent);flex:none"')}<div style="flex:1"><b>NightOS for Windows</b><p style="margin:4px 0 0;color:var(--fg-dim)" data-ver>Desktop app</p></div></div>
     <h4>Window</h4><div class="grp">${ui.row('Start in full screen', 'NightOS fills the screen like its own desktop. Press F11 any time to switch', `<button class="sw" data-fs-start role="switch" aria-label="Start in full screen"></button>`)}${ui.row('Full screen now', '', '<button class="hbtn" data-fs-now style="background:var(--press)">Toggle (F11)</button>')}</div>
     <h4>Your apps</h4><div class="grp">${ui.row('Steam', STEAM.found ? `${STEAM.games.length} installed games found` : STEAM.scanned ? 'Not found on this PC' : 'Checking…', '<button class="hbtn" data-rescan style="background:var(--press)">Rescan</button>')}${ui.row('Discord', '<span data-dc>Checking…</span>', '<button class="hbtn" data-dc-open style="background:var(--press)">Open</button>')}${ui.row('Websites', 'Nightfox and web apps load real sites. Logins are kept between sessions', '')}</div>
+    <h4>Windows programs</h4><div class="grp">${ui.row('Show Windows desktop shortcuts', 'Your Windows desktop programs and shortcuts appear on the NightOS desktop', `<button class="sw ${CFG.winOnDesk ? 'on' : ''}" data-wd role="switch" aria-checked="${!!CFG.winOnDesk}" aria-label="Show Windows desktop shortcuts"></button>`)}${ui.row('Windows Programs', 'Run, add and pin programs from your PC', '<button class="hbtn" data-wp style="background:var(--press)">Open</button>')}${ui.row('Forget approved programs', 'NightOS asks again before running each program', '<button class="hbtn" data-wf style="background:var(--press)">Forget</button>')}</div>
     <p style="color:var(--fg-dim);font-size:12.5px;margin:0">Games and the Discord and Steam apps run in their own windows on top of NightOS. NightOS can start them but not draw them inside its windows.</p>`,
   bind: (main, ctx) => {
     NATIVE.info().then(i => {
@@ -137,5 +138,8 @@ if (NATIVE) SETTINGS_EXTRA.push({
     $('[data-fs-now]', main).onclick = () => NATIVE.setFullscreen();
     $('[data-rescan]', main).onclick = () => { STEAM.scanned = false; scanSteam().then(ctx.rerender); ctx.rerender(); };
     $('[data-dc-open]', main).onclick = () => nativeDiscord();
+    $('[data-wd]', main).onclick = () => { CFG.winOnDesk = !CFG.winOnDesk; saveCfg(); renderDesktop(); ctx.rerender(); };
+    $('[data-wp]', main).onclick = () => launch('winapps');
+    $('[data-wf]', main).onclick = async () => { await NATIVE.forgetApprovals(); notify('winapps', 'Approvals cleared', 'NightOS will ask before running each program again.'); };
   }
 });

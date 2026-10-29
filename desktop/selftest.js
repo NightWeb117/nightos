@@ -32,6 +32,11 @@ module.exports = (win, app) => {
       await shot('3-nightfox-real-site');
       report.steps.discord = await js(`(async () => { WM.wins.forEach(w => closeWin(w, true)); const w = WebAppWindow({ id: 'discord', name: 'Discord', url: 'https://discord.com/app' }); await new Promise(r => setTimeout(r, 9000)); return w.body.querySelector('webview').getTitle(); })()`);
       await shot('4-discord-web');
+      report.steps.winDesktop = await js(`(async () => { WM.wins.forEach(w => closeWin(w, true)); const list = await nightosNative.desktopPrograms(); await new Promise(r => setTimeout(r, 300)); return { count: list.length, names: list.slice(0, 10).map(p => p.name + ' (' + p.kind + (p.icon ? ', icon' : '') + ')'), onNightOSDesktop: document.querySelectorAll('#desk [data-path^="winexe:"]').length }; })()`);
+      await shot('6-desktop-with-windows-shortcuts');
+      report.steps.winApp = await js(`(async () => { launch('winapps'); await new Promise(r => setTimeout(r, 1200)); return document.querySelectorAll('.wp-card').length; })()`);
+      await shot('7-windows-programs');
+      report.steps.winGuard = await js(`(async () => { const out = []; for (const p of ['C:\\\\Windows\\\\win.ini', 'relative.exe', 'C:\\\\nope\\\\missing.exe']) { try { await nightosNative.runProgram(p); out.push(p + ': RAN'); } catch (e) { out.push(p + ': refused'); } } return out; })()`);
       report.steps.settings = await js(`(async () => { WM.wins.forEach(w => closeWin(w, true)); launch('settings', 'desktopapp'); await new Promise(r => setTimeout(r, 1200)); return document.querySelector('.st-page').innerText.slice(0, 200); })()`);
       await shot('5-settings-desktop-app');
     } catch (e) { report.fatal = String(e && e.stack || e); }

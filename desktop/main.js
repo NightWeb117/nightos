@@ -1,7 +1,7 @@
 'use strict';
 // NightOS desktop: serves the website from disk over a private nightos:// scheme and gives the
 // page a small, fixed set of native actions (see preload.js). Nothing else on the PC is reachable.
-const { app, BrowserWindow, protocol, ipcMain, shell, session, Menu } = require('electron');
+const { app, BrowserWindow, protocol, ipcMain, shell, session, Menu, dialog, nativeImage } = require('electron');
 const path = require('path'), fs = require('fs'), { Readable } = require('stream');
 const steam = require('./steam');
 
@@ -50,6 +50,58 @@ function setUpWebSession() {
   web.setPermissionRequestHandler((wc, perm, cb, details) => { let host = ''; try { host = new URL(details.requestingUrl || wc.getURL()).hostname; } catch (e) { } cb(allow.has(perm) && (perm === 'fullscreen' || TRUSTED_WEB.test(host))); });
   web.setPermissionCheckHandler((wc, perm, origin) => { let host = ''; try { host = new URL(origin).hostname; } catch (e) { } return allow.has(perm) && (perm === 'fullscreen' || TRUSTED_WEB.test(host)); });
 }
+/* ---------- Windows programs: .exe files, shortcuts (.lnk) and internet shortcuts (.url) ----------
+   A program only runs after the user confirms it once in a native dialog, which page content
+   can't fake. Approved paths are remembered in desktop.json. */
+const PROGRAM = /\.(exe|lnk|url)$/i;
+const normPath = p => path.resolve(String(p)).toLowerCase();
+const approved = () => new Set((config.approvedPrograms || []).map(normPath));
+function checkProgram(p) {
+  if (typeof p !== 'string' || !PROGRAM.test(p) || !path.isAbsolute(p)) throw new Error('Only .exe, .lnk and .url files can be run');
+  if (!fs.existsSync(p) || !fs.statSync(p).isFile()) throw new Error('That program no longer exists');
+}
+async function describeProgram(p) {
+  checkProgram(p);
+  const ext = path.extname(p).toLowerCase(); let target = p;
+  if (ext === '.lnk') { try { const s = shell.readShortcutLink(p); if (s.target && fs.existsSync(s.target)) target = s.target; } catch (e) { } }
+  let icon = null;
+  // Internet shortcuts (Steam games use these) name their real icon in an IconFile= line.
+  if (ext === '.url') {
+    try {
+      const m = /^IconFile=(.+)$/mi.exec(fs.readFileSync(p, 'utf8'));
+      if (m && fs.existsSync(m[1].trim())) { const img = nativeImage.createFromPath(m[1].trim()); if (!img.isEmpty()) icon = img.resize({ width: 64, height: 64, quality: 'best' }).toDataURL(); }
+    } catch (e) { }
+  }
+  if (!icon) try { const img = await app.getFileIcon(target, { size: 'large' }); if (!img.isEmpty()) icon = img.toDataURL(); } catch (e) { }
+  if (!icon) try { const img = await app.getFileIcon(p, { size: 'large' }); if (!img.isEmpty()) icon = img.toDataURL(); } catch (e) { }
+  return { path: p, name: path.basename(p).replace(PROGRAM, ''), kind: ext.slice(1), target, icon, approved: approved().has(normPath(p)) };
+}
+async function desktopPrograms() {
+  const dirs = [app.getPath('desktop'), process.env.PUBLIC && path.join(process.env.PUBLIC, 'Desktop')].filter(Boolean), seen = new Set(), out = [];
+  for (const d of dirs) {
+    let names = []; try { names = fs.readdirSync(d); } catch (e) { continue; }
+    for (const n of names) {
+      const p = path.join(d, n); if (!PROGRAM.test(n) || seen.has(normPath(p))) continue; seen.add(normPath(p));
+      try { out.push(await describeProgram(p)); } catch (e) { }
+    }
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+async function runProgram(p) {
+  checkProgram(p);
+  if (!approved().has(normPath(p))) {
+    const r = await dialog.showMessageBox(win, {
+      type: 'warning', buttons: ['Run', 'Cancel'], defaultId: 0, cancelId: 1, noLink: true,
+      title: 'Run a Windows program?', message: `Run “${path.basename(p)}”?`,
+      detail: `${p}\n\nIt runs as a normal Windows program with full access to your PC, outside NightOS. Only run programs you trust.`,
+      checkboxLabel: 'Don’t ask again for this program', checkboxChecked: true
+    });
+    if (r.response !== 0) return { ok: false, cancelled: true };
+    if (r.checkboxChecked) { config.approvedPrograms = [...(config.approvedPrograms || []), p]; saveConfig(config); }
+  }
+  const err = await shell.openPath(p);
+  return err ? { ok: false, error: err } : { ok: true };
+}
 function fromNightOS(e) { return !!(e.senderFrame && e.senderFrame.url.startsWith('nightos://app/')); }
 function setUpIpc() {
   const guard = fn => (e, ...a) => { if (!fromNightOS(e)) throw new Error('Not allowed'); return fn(...a); };
@@ -68,6 +120,15 @@ function setUpIpc() {
   ipcMain.handle('native:fullscreen', guard(on => { if (win) win.setFullScreen(on == null ? !win.isFullScreen() : !!on); return win ? win.isFullScreen() : false; }));
   ipcMain.handle('native:setStartFullscreen', guard(on => { config.fullscreen = !!on; saveConfig(config); return config.fullscreen; }));
   ipcMain.handle('native:quit', guard(() => { app.quit(); return true; }));
+  ipcMain.handle('native:desktopPrograms', guard(() => desktopPrograms()));
+  ipcMain.handle('native:describeProgram', guard(p => describeProgram(p)));
+  ipcMain.handle('native:runProgram', guard(p => runProgram(p)));
+  ipcMain.handle('native:pickProgram', guard(async () => {
+    const r = await dialog.showOpenDialog(win, { title: 'Choose a program to add to NightOS', defaultPath: app.getPath('desktop'), buttonLabel: 'Add to NightOS', filters: [{ name: 'Programs and shortcuts', extensions: ['exe', 'lnk', 'url'] }], properties: ['openFile', 'multiSelections'] });
+    if (r.canceled) return [];
+    const out = []; for (const p of r.filePaths) { try { out.push(await describeProgram(p)); } catch (e) { } } return out;
+  }));
+  ipcMain.handle('native:forgetApprovals', guard(() => { config.approvedPrograms = []; saveConfig(config); return true; }));
 }
 function createWindow() {
   win = new BrowserWindow({

@@ -474,6 +474,15 @@ body.wm-drag iframe,body.wm-drag webview{pointer-events:none}
 webview.appweb{flex:1;width:100%;min-height:0;display:flex;border:0;background:#fff}
 .bw-webs{flex:1;min-height:0;display:flex;background:#fff}.bw-webs[hidden]{display:none!important}
 .bw-webs webview{flex:1;width:100%;height:100%;border:0}
+/* Windows Programs */
+.wp-note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--accent) 12%,var(--card));color:var(--fg);font-size:13px;line-height:1.45}
+.wp-note .sym{flex:none;margin-top:2px;color:var(--accent)}
+.wp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.wp-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:14px;text-align:center;min-width:0}
+.wp-card:hover{background:var(--hover)}.wp-card.sel{background:color-mix(in srgb,var(--accent) 24%,transparent)}
+.wp-card svg{width:52px;height:52px}
+.wp-card b{font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wp-card small{color:var(--fg-dim);font-size:11.5px}
+.wp-add{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border-radius:12px;background:var(--card);box-shadow:0 0 0 1px var(--line)}.wp-add p{margin:0;color:var(--fg-dim)}
 /* Game Library */
 .gl{background:#0d1117}
 .gl-page{padding:18px 20px 28px;display:flex;flex-direction:column;gap:18px}
@@ -753,5 +762,6 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
 <script src="js/hello.js"></script>
 <script src="js/system.js"></script>
 <script src="js/native.js"></script>
+<script src="js/winapps.js"></script>
 </body>
 </html>
