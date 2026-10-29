@@ -93,10 +93,17 @@ async function bootSequence(skipGrub) {
   const units = ['Created slice system-modprobe.slice - Slice /system/modprobe.', 'Started systemd-journald.service - Journal Service.', 'Finished systemd-remount-fs.service - Remount Root and Kernel File Systems.', 'Started systemd-udevd.service - Rule-based Manager for Device Events and Files.', 'Mounted boot-efi.mount - /boot/efi.', 'Reached target local-fs.target - Local File Systems.', 'Started systemd-resolved.service - Network Name Resolution.', 'Started systemd-timesyncd.service - Network Time Synchronization.', 'Started dbus.service - D-Bus System Message Bus.', 'Started NetworkManager.service - Network Manager.', 'Reached target network.target - Network.', 'Started wpa_supplicant.service - WPA supplicant.', 'Started bluetooth.service - Bluetooth service.', 'Started polkit.service - Authorization Manager.', 'Started cups.service - CUPS Scheduler.', 'Reached target multi-user.target - Multi-User System.', 'Started nightdm.service - Night Display Manager.', 'Reached target graphical.target - Graphical Interface.'];
   for (const u of units) { if (skip) break; k.append(klogLine('[  OK  ] ' + u)); if (u.includes('nightdm')) k.append(klogLine('         Starting nightdm.service - Night Display Manager...')); await wait(55 + Math.random() * 60); }
   removeEventListener('keydown', onKey); b.onpointerdown = null;
-  b.innerHTML = `<div class="splash">${LOGO}<div class="word">NightOS</div><div class="spinner"></div></div>`;
-  await wait(1700);
+  await bootFilm(b);
   SYS.boot = Date.now(); b.hidden = true; b.innerHTML = '';
   showLock('login');
+}
+// The spider-and-moon film plays where a plain splash used to. Settings › Appearance can turn it off.
+async function bootFilm(b) {
+  if (typeof playIntro !== 'function' || CFG.bootFilm === false) {
+    b.innerHTML = `<div class="splash">${LOGO}<div class="word">NightOS</div><div class="spinner"></div></div>`;
+    await wait(1700); return;
+  }
+  b.innerHTML = ''; await playIntro(b);
 }
 
 /* ================= lock screen ================= */
@@ -149,6 +156,8 @@ function init() {
   let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => renderWall(false), 250); });
   setInterval(sysTick, 1000); sysTick();
   setInterval(() => { if (!REAL.battery && CFG.battery > 4 && Math.random() < .5) { CFG.battery--; saveCfg(); renderTray(); if (CFG.battery === 20) notify('settings', 'Low Battery', '20 % remaining', { urgent: true }); } }, 120000);
-  showLock('login');
+  SYSTEM.state = 'boot';
+  const b = $('#boot'); b.hidden = false; b.style.cursor = 'none';
+  bootFilm(b).then(() => { b.hidden = true; b.innerHTML = ''; showLock('login'); });
 }
 init();
