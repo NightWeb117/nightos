@@ -45,12 +45,31 @@ function BrowserApp(startUrl) {
   win.hl.append(hbtn('plus', 'New Tab', () => newTab('about:newtab')));
   win.body.innerHTML = `<div class="bw-bar"><button class="hbtn" data-b="back" aria-label="Back">${sym('back')}</button><button class="hbtn" data-b="fwd" aria-label="Forward">${sym('fwd')}</button><button class="hbtn" data-b="reload" aria-label="Reload">${sym('reload')}</button><label class="bw-url">${sym('shield')}<input id="bw-url-${win.id}" spellcheck="false" autocomplete="off" aria-label="Address"></label><button class="hbtn dlb" data-b="dl" aria-label="Downloads" hidden>${sym('download')}<span class="ring"></span></button><button class="hbtn" data-b="menu" aria-label="Menu">${sym('menu')}</button></div><div class="bw-prog"></div><div class="bw-view"></div>`;
   const urlIn = $('input', win.body), view = $('.bw-view', win.body), prog = $('.bw-prog', win.body), bar = $('.bw-bar', win.body), dlB = $('[data-b=dl]', win.body);
-  const fav = t => t.url.startsWith('about:') ? AI.browser().replace('<svg', '<svg class="fav"') : `<svg class="fav" viewBox="0 0 24 24">${t.err ? sym('globe').replace(/^<svg[^>]*>|<\/svg>$/g, '') : `<path d="${LOGO_PATH}" transform="scale(.375)" fill="#8ab4ff"/>`}</svg>`;
+  // In the desktop app, real websites load in a <webview> per tab (see native.js); built-in pages stay HTML.
+  const webs = el('<div class="bw-webs" hidden></div>'); view.after(webs);
+  function webGo(t, url) {
+    t.web = true; t.url = url; t.title = t.title === 'New Tab' ? url.replace(/^https?:\/\//, '') : t.title;
+    if (!t.wv) {
+      const wv = document.createElement('webview'); wv.setAttribute('partition', 'persist:web'); wv.setAttribute('allowpopups', ''); wv.setAttribute('src', url); t.wv = wv; t.ready = false;
+      wv.addEventListener('dom-ready', () => { t.ready = true; if (t === cur) show(t); });
+      wv.addEventListener('page-title-updated', e => { t.title = e.title; drawTabs(); if (t === cur) win.setTitle(t.title); });
+      const nav = e => { t.url = e.url; if (t === cur) { urlIn.value = e.url; show(t); } };
+      wv.addEventListener('did-navigate', nav); wv.addEventListener('did-navigate-in-page', e => { if (e.isMainFrame) nav(e); });
+      wv.addEventListener('did-start-loading', () => { t.loading = true; drawTabs(); });
+      wv.addEventListener('did-stop-loading', () => { t.loading = false; drawTabs(); });
+      webs.append(wv);
+    } else wv_load(t, url);
+    drawTabs(); if (t === cur) show(t);
+  }
+  const wv_load = (t, url) => { try { if (t.ready) t.wv.loadURL(url); else t.wv.setAttribute('src', url); } catch (e) { t.wv.setAttribute('src', url); } };
+  const fav = t => t.web ? `<svg class="fav" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${P.globe}</svg>` : t.url.startsWith('about:') ? AI.browser().replace('<svg', '<svg class="fav"') : `<svg class="fav" viewBox="0 0 24 24">${t.err ? sym('globe').replace(/^<svg[^>]*>|<\/svg>$/g, '') : `<path d="${LOGO_PATH}" transform="scale(.375)" fill="#8ab4ff"/>`}</svg>`;
   function drawTabs() { strip.innerHTML = tabs.map(t => `<div class="bw-tab ${t === cur ? 'on' : ''}" data-t="${t.id}" role="tab" aria-selected="${t === cur}" title="${esc(t.title)}">${t.loading ? '<span class="spinner" style="width:14px;height:14px;border-color:var(--press);border-top-color:var(--accent)"></span>' : fav(t)}<span class="t">${esc(t.title)}</span><button class="x" data-x="${t.id}" aria-label="Close tab">${sym('close')}</button></div>`).join(''); }
   function newTab(u) { const t = { id: ++tabSeq, hist: [], idx: -1, title: 'New Tab', url: 'about:newtab', scroll: 0 }; tabs.push(t); cur = t; navigate(t, u || 'about:newtab'); return t; }
-  function closeTab(id) { const i = tabs.findIndex(t => t.id === id); if (i < 0) return; tabs.splice(i, 1); if (!tabs.length) return closeWin(win); if (cur.id === id) { cur = tabs[Math.max(0, i - 1)]; show(cur); } drawTabs(); }
+  function closeTab(id) { const i = tabs.findIndex(t => t.id === id); if (i < 0) return; if (tabs[i].wv) tabs[i].wv.remove(); tabs.splice(i, 1); if (!tabs.length) return closeWin(win); if (cur.id === id) { cur = tabs[Math.max(0, i - 1)]; show(cur); } drawTabs(); }
   function navigate(t, raw, fromHist) {
-    const u = normURL(raw);
+    const u = normURL(raw), real = typeof nativeRealUrl === 'function' ? nativeRealUrl(u, raw) : null;
+    if (real) return webGo(t, real);
+    t.web = false;
     if (!fromHist) { t.hist = t.hist.slice(0, t.idx + 1); t.hist.push(u); t.idx = t.hist.length - 1; }
     t.url = u; t.loading = !u.startsWith('about:'); drawTabs();
     if (t === cur) { urlIn.value = u.startsWith('about:newtab') ? '' : (u.startsWith('about:') ? u : 'https://' + u); prog.style.transition = 'none'; prog.style.width = '0'; prog.style.opacity = 1; }
@@ -61,6 +80,13 @@ function BrowserApp(startUrl) {
     if (t.loading) { requestAnimationFrame(() => { if (t === cur) { prog.style.transition = 'width .5s'; prog.style.width = '70%'; } }); setTimeout(finish, 280 + Math.random() * 380); } else finish();
   }
   function show(t) {
+    tabs.forEach(x => { if (x.wv) x.wv.style.display = x === t && t.web ? 'flex' : 'none'; });
+    webs.hidden = !t.web; view.hidden = !!t.web;
+    if (t.web) {
+      win.setTitle(t.title); urlIn.value = t.url;
+      $('[data-b=back]', bar).disabled = !(t.ready && t.wv.canGoBack()); $('[data-b=fwd]', bar).disabled = !(t.ready && t.wv.canGoForward());
+      return;
+    }
     view.innerHTML = t.html || ''; view.scrollTop = 0; win.setTitle(t.title);
     urlIn.value = t.url.startsWith('about:newtab') ? '' : (t.url.startsWith('about:') ? t.url : 'https://' + t.url);
     $('[data-b=back]', bar).disabled = t.idx <= 0; $('[data-b=fwd]', bar).disabled = t.idx >= t.hist.length - 1;
@@ -71,6 +97,7 @@ function BrowserApp(startUrl) {
   strip.addEventListener('dblclick', e => { if (e.target === strip) newTab(); });
   bar.addEventListener('click', e => {
     const b = e.target.closest('[data-b]'); if (!b) return; const a = b.dataset.b;
+    if (cur.web && cur.ready && ['back', 'fwd', 'reload'].includes(a)) { if (a === 'back') cur.wv.goBack(); else if (a === 'fwd') cur.wv.goForward(); else cur.wv.reload(); return; }
     if (a === 'back' && cur.idx > 0) { cur.idx--; navigate(cur, cur.hist[cur.idx], true); }
     if (a === 'fwd' && cur.idx < cur.hist.length - 1) { cur.idx++; navigate(cur, cur.hist[cur.idx], true); }
     if (a === 'reload') navigate(cur, cur.url, true);
@@ -119,7 +146,7 @@ function SettingsApp(page = 'wifi') {
   const EXTRA = Object.fromEntries((typeof SETTINGS_EXTRA !== 'undefined' ? SETTINGS_EXTRA : []).map(x => [x.id, x]));
   const PAGES = [['wifi', 'Wi‑Fi', 'wifi'], ['bt', 'Bluetooth', 'bt'], ['displays', 'Displays', 'display'], ['sound', 'Sound', 'vol'], ['power', 'Power', 'battery'], ['-'],
     ['theme', 'Global Theme', 'palette'], ['colors', 'Colors & Fonts', 'palette'], ['background', 'Wallpaper', 'pic'], ['panel', 'Panel & Dock', 'desktop'], ['windows', 'Windows', 'grid'], ['desktopcfg', 'Desktop & Widgets', 'desktop'], ['terminalcfg', 'Terminal', 'term'], ['-'],
-    ['notifications', 'Notifications', 'bell'], ['snapshots', 'Snapshots', 'restart'], ['linuxvm', 'Linux VM', 'term'], ['about', 'System', 'info']].filter(([id]) => id === '-' || !['theme', 'colors', 'panel', 'windows', 'desktopcfg', 'terminalcfg', 'snapshots', 'linuxvm'].includes(id) || EXTRA[id]);
+    ['notifications', 'Notifications', 'bell'], ['snapshots', 'Snapshots', 'restart'], ['linuxvm', 'Linux VM', 'term'], ['desktopapp', 'Desktop App', 'desktop'], ['about', 'System', 'info']].filter(([id]) => id === '-' || !['theme', 'colors', 'panel', 'windows', 'desktopcfg', 'terminalcfg', 'snapshots', 'linuxvm', 'desktopapp'].includes(id) || EXTRA[id]);
   if (page === 'appearance') page = EXTRA.colors ? 'colors' : 'appearance';
   win.body.innerHTML = `<div class="st"><nav class="st-side" aria-label="Settings sections"></nav><div class="st-main"><div class="st-page"></div></div></div>`;
   const side = $('.st-side', win.body), main = $('.st-page', win.body);

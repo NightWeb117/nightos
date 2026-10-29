@@ -470,7 +470,30 @@ input.entry:focus{box-shadow:0 0 0 2px var(--accent)}
 
 /* ---------- app center ---------- */
 .appframe{flex:1;width:100%;min-height:0;border:0;background:#000;display:block}
-body.wm-drag iframe{pointer-events:none}
+body.wm-drag iframe,body.wm-drag webview{pointer-events:none}
+webview.appweb{flex:1;width:100%;min-height:0;display:flex;border:0;background:#fff}
+.bw-webs{flex:1;min-height:0;display:flex;background:#fff}.bw-webs[hidden]{display:none!important}
+.bw-webs webview{flex:1;width:100%;height:100%;border:0}
+/* Game Library */
+.gl{background:#0d1117}
+.gl-page{padding:18px 20px 28px;display:flex;flex-direction:column;gap:18px}
+.gl-q{display:flex;align-items:center;gap:8px;height:32px;border-radius:9px;background:var(--press);padding:0 10px;width:min(260px,40vw)}
+.gl-q input{border:0;background:none;outline:none;color:var(--fg);min-width:0;flex:1}
+.gl-sort{height:32px;border-radius:8px;border:0;background:var(--press);color:var(--fg);padding:0 8px}
+.gl-hero{position:relative;border-radius:16px;overflow:hidden;min-height:180px;display:flex;align-items:flex-end;padding:22px;color:#fff;background:linear-gradient(90deg,rgba(5,8,12,.92) 30%,rgba(5,8,12,.2)),var(--img) center/cover,#1b2838}
+.gl-hero small{text-transform:uppercase;letter-spacing:.12em;font-size:11.5px;font-weight:700;opacity:.8}.gl-hero h2{margin:4px 0 4px;font-size:26px}.gl-hero p{margin:0 0 14px;opacity:.8}
+.gl-play{height:40px;padding:0 22px;font-size:15px}
+.gl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px}
+.gl-card{display:flex;flex-direction:column;gap:6px;text-align:left;color:#e6edf3;min-width:0}
+.gl-art{position:relative;aspect-ratio:2/3;max-width:100%;border-radius:10px;overflow:hidden;background:#1b2838;box-shadow:0 6px 18px rgba(0,0,0,.4);transition:transform .15s,box-shadow .15s}
+.gl-card:hover .gl-art,.gl-card:focus-visible .gl-art{transform:translateY(-3px);box-shadow:0 0 0 2px var(--accent),0 10px 26px rgba(0,0,0,.5)}
+.gl-art img{width:100%;height:100%;object-fit:cover;display:block}.gl-art img.wide{object-fit:contain;background:#0e141b}
+.gl-ph{position:absolute;inset:0;display:grid;place-items:center;padding:12px;text-align:center;font-weight:700;background:linear-gradient(160deg,#24384f,#121c28)}
+.gl-hover{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.45);opacity:0;transition:opacity .15s}.gl-hover .sym{width:44px;height:44px;color:#fff}
+.gl-card:hover .gl-hover{opacity:1}
+.gl-badge{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.7);border-radius:6px;padding:2px 7px;font-size:11px;font-weight:700}
+.gl-card.notready .gl-art{filter:grayscale(.7)}
+.gl-card b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gl-card small{color:#8b949e;font-size:12px}
 .ap{flex:1;overflow:auto;background:var(--surface);outline:none}
 .ap-page{max-width:900px;margin:0 auto;padding:20px 20px 32px;display:flex;flex-direction:column;gap:18px}
 .ap-search{display:flex;align-items:center;gap:10px;height:40px;border-radius:12px;background:var(--press);padding:0 14px;max-width:420px;width:100%;align-self:center}
@@ -729,5 +752,6 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
 <script src="js/desk.js"></script>
 <script src="js/hello.js"></script>
 <script src="js/system.js"></script>
+<script src="js/native.js"></script>
 </body>
 </html>
