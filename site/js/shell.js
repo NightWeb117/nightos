@@ -83,8 +83,8 @@ function closePops() {
 }
 document.addEventListener('pointerdown', e => {
   if (menuEl && !menuEl.contains(e.target)) closeMenu();
-  if (qsOpen && !e.target.closest('#qs,#tray')) closePops();
-  if (calOpen && !e.target.closest('#cal,#clock')) closePops();
+  if (qsOpen && !e.target.closest('#qs,#tray,[data-qs-anchor]')) closePops();
+  if (calOpen && !e.target.closest('#cal,#clock,[data-cal-anchor]')) closePops();
 }, true);
 function setSlider(inp, v) { inp.value = v; inp.style.setProperty('--v', v + '%'); }
 function toggleQS() {
@@ -263,7 +263,9 @@ function initDesktop() {
       { label: 'Open in Terminal', icon: 'term', action: () => launch('terminal', { cwd: HOME + '/Desktop' }) },
       { label: 'Show Desktop in Files', icon: 'home', action: () => launch('files', HOME + '/Desktop') },
       { label: 'Import Files From Computer…', icon: 'download', action: () => pickFiles(HOME + '/Desktop') }, '-',
+      { label: 'Add Widgets…', icon: 'plus', action: () => launch('settings', 'desktopcfg') },
       { label: 'Change Background…', icon: 'pic', action: () => launch('settings', 'background') },
+      { label: 'Customize the Look…', icon: 'palette', action: () => launch('settings', 'theme') },
       { label: 'Display Settings', icon: 'display', action: () => launch('settings', 'displays') },
       { label: 'Settings', icon: 'gear', action: () => launch('settings') }]);
   };
@@ -289,7 +291,7 @@ function initShell() {
   $('#clock').onclick = toggleCal;
   let hot = false;
   document.addEventListener('pointermove', e => {
-    if (e.clientX <= 1 && e.clientY <= 1) { if (!hot && SYSTEM.state === 'desktop' && e.buttons === 0) { hot = true; toggleOverview(); } }
+    if (e.clientX <= 1 && e.clientY <= 1) { if (!hot && SYSTEM.state === 'desktop' && e.buttons === 0 && (!CFG.look || CFG.look.hotCorner)) { hot = true; toggleOverview(); } }
     else if (e.clientX > 12 || e.clientY > 12) hot = false;
   });
   document.addEventListener('keydown', e => {

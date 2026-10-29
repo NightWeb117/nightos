@@ -115,18 +115,26 @@ const NETS = [['Night-5G', 4, true], ['Night-2.4', 3, true], ['Starlight_Guest',
 const BTDEV = [['Lumen Keys', 'Keyboard', true], ['Orbit Mouse', 'Mouse', false], ['Nova Buds', 'Headphones', false]];
 function SettingsApp(page = 'wifi') {
   const win = openWin({ app: 'settings', w: 900, h: 600, minW: 380, minH: 360, mem: 88 });
-  const PAGES = [['wifi', 'Wi‑Fi', 'wifi'], ['bt', 'Bluetooth', 'bt'], ['displays', 'Displays', 'display'], ['sound', 'Sound', 'vol'], ['power', 'Power', 'battery'], ['-'], ['background', 'Background', 'pic'], ['appearance', 'Appearance', 'palette'], ['notifications', 'Notifications', 'bell'], ['-'], ['about', 'System', 'info']];
+  // Pages from look.js, desk.js and hello.js (SETTINGS_EXTRA) slot in by id.
+  const EXTRA = Object.fromEntries((typeof SETTINGS_EXTRA !== 'undefined' ? SETTINGS_EXTRA : []).map(x => [x.id, x]));
+  const PAGES = [['wifi', 'Wi‑Fi', 'wifi'], ['bt', 'Bluetooth', 'bt'], ['displays', 'Displays', 'display'], ['sound', 'Sound', 'vol'], ['power', 'Power', 'battery'], ['-'],
+    ['theme', 'Global Theme', 'palette'], ['colors', 'Colors & Fonts', 'palette'], ['background', 'Wallpaper', 'pic'], ['panel', 'Panel & Dock', 'desktop'], ['windows', 'Windows', 'grid'], ['desktopcfg', 'Desktop & Widgets', 'desktop'], ['terminalcfg', 'Terminal', 'term'], ['-'],
+    ['notifications', 'Notifications', 'bell'], ['snapshots', 'Snapshots', 'restart'], ['linuxvm', 'Linux VM', 'term'], ['about', 'System', 'info']].filter(([id]) => id === '-' || !['theme', 'colors', 'panel', 'windows', 'desktopcfg', 'terminalcfg', 'snapshots', 'linuxvm'].includes(id) || EXTRA[id]);
+  if (page === 'appearance') page = EXTRA.colors ? 'colors' : 'appearance';
   win.body.innerHTML = `<div class="st"><nav class="st-side" aria-label="Settings sections"></nav><div class="st-main"><div class="st-page"></div></div></div>`;
   const side = $('.st-side', win.body), main = $('.st-page', win.body);
   let cur = page, meterIv = null;
   const sw = (id, on) => `<button class="sw ${on ? 'on' : ''}" data-sw="${id}" role="switch" aria-checked="${!!on}" aria-label="${id}"></button>`;
   const row = (title, sub, right, attrs = '') => `<div class="row" ${attrs}><div class="tx">${title}${sub ? `<small>${sub}</small>` : ''}</div>${right || ''}</div>`;
-  function show(p) {
+  function show(p, keepScroll) {
+    if (p === 'appearance' && EXTRA.colors) p = 'colors';
+    const scroll = main.parentElement.scrollTop;
     cur = p; clearInterval(meterIv);
     side.innerHTML = PAGES.map(([id, l, ic]) => id === '-' ? '<hr style="border:0;height:1px;background:var(--line);margin:6px 4px">' : `<button class="${id === cur ? 'on' : ''}" data-p="${id}">${sym(ic)}<span>${l}</span></button>`).join('');
     const label = (PAGES.find(x => x[0] === p) || [, 'Settings'])[1]; win.setTitle(label);
-    main.innerHTML = RENDER[p] ? RENDER[p]() : '';
-    main.parentElement.scrollTop = 0;
+    main.innerHTML = EXTRA[p] ? EXTRA[p].render() : RENDER[p] ? RENDER[p]() : '';
+    if (EXTRA[p] && EXTRA[p].bind) EXTRA[p].bind(main, { win, rerender: () => show(cur, true) });
+    main.parentElement.scrollTop = keepScroll ? scroll : 0;
     $$('input[type=range]', main).forEach(r => r.style.setProperty('--v', ((r.value - r.min) / (r.max - r.min) * 100) + '%'));
     $$('img[data-blob]', main).forEach(img => BLOBS.get(img.dataset.blob).then(b => { if (b) img.src = URL.createObjectURL(b); }));
     if (p === 'sound') { const m = $('#st-mic i', main); meterIv = setInterval(() => { m.style.width = (Math.random() < .3 ? Math.random() * 60 : Math.random() * 12) + '%'; }, 120); }
@@ -171,7 +179,7 @@ function SettingsApp(page = 'wifi') {
     if (r.id === 'st-bright') { CFG.bright = +r.value; applyLook(); saveCfg(); }
     if (r.id === 'st-vol') { CFG.volume = +r.value; renderTray(); saveCfg(); }
   });
-  const onCfg = () => { if (!main.contains(document.activeElement) || document.activeElement.type !== 'range') show(cur); };
+  const onCfg = () => { if (!main.contains(document.activeElement) || !['range', 'color', 'text'].includes(document.activeElement.type)) show(cur, true); };
   document.addEventListener('cfg', onCfg);
   win.onClose = () => { clearInterval(meterIv); document.removeEventListener('cfg', onCfg); };
   show(page); return win;

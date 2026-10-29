@@ -93,7 +93,7 @@ function linuxFlush() {
 function linuxByte(b) {
   const L = LINUX;
   L.tail = (L.tail + String.fromCharCode(b)).slice(-160);
-  if (L.state === 'booting' && !L.sentBoot && /boot: $/.test(L.tail)) { L.sentBoot = true; setTimeout(() => linuxType('virt console=ttyS0,115200\n'), 350); }
+  if (L.state === 'booting' && !L.sentBoot && /boot: $/.test(L.tail)) { L.sentBoot = true; setTimeout(() => linuxType(`virt console=ttyS0,115200${CFG.vm && CFG.vm.cmdline ? ' ' + CFG.vm.cmdline : ''}\n`), 350); }
   if ((L.state === 'booting') && /login: $/.test(L.tail)) { L.state = 'login'; setTimeout(() => L.emu.serial0_send('root\n'), 200); linuxStatus('Logging in…'); }
   else if (L.state === 'login' && /:~# (\x1b\[6n)?$/.test(L.tail)) { L.state = 'setup'; L.hidden = true; linuxSetup(); }
   else if (L.state === 'setup' && L.tail.includes('__NOS_READY__')) { L.state = 'ready'; L.tail = ''; L.hidden = false; L.skipLine = true; linuxStatus(''); updateLinuxTitle(); return; }
@@ -126,7 +126,7 @@ async function linuxBoot() {
   if (typeof V86 === 'undefined') { L.term.write('\x1b[31mThe Linux emulator is not available in this copy of NightOS.\x1b[0m\r\nOpen the NightOS website to use real Linux.\r\n'); return; }
   if (L.emu) return;
   L.state = 'loading'; L.sentBoot = false; L.tail = ''; L.hidden = false; L.startedAt = Date.now();
-  L.memMB = navigator.deviceMemory && navigator.deviceMemory < 4 ? 256 : 512;
+  L.memMB = (CFG.vm && CFG.vm.mem) || (navigator.deviceMemory && navigator.deviceMemory < 4 ? 256 : 512);
   linuxStatus('Starting virtual machine…');
   L.term.write('\x1b[2mStarting an emulated x86 PC (' + L.memMB + ' MB RAM) and booting Alpine Linux. This takes about a minute.\x1b[0m\r\n\r\n');
   const asyncDisk = await rangeSupported(L.iso);

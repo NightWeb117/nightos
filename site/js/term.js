@@ -159,12 +159,29 @@ function TerminalApp(arg) {
     { label: 'About Terminal', action: () => notify('terminal', 'Terminal 46.0', 'A terminal emulator for the Dusk desktop.') }]));
   win.hr.append(menuB);
   const b = win.body; b.classList.add('term');
-  b.innerHTML = `<div class="t-scroll" tabindex="-1"><div class="t-out"></div><div class="t-line"><span class="t-ps"></span><input class="t-in" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Terminal input"></div></div>`;
-  const sc = $('.t-scroll', b), out = $('.t-out', b), line = $('.t-line', b), ps = $('.t-ps', b), inp = $('.t-in', b);
-  const zoom = d => { T.size = d === 0 ? 13.5 : clamp(T.size + d, 9, 24); b.style.fontSize = T.size + 'px'; };
+  b.innerHTML = `<div class="t-scroll" tabindex="-1"><div class="t-out"></div><div class="t-line"><span class="t-ps"></span><span class="t-inw"><input class="t-in" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Terminal input"><span class="t-ghost" aria-hidden="true"></span></span></div></div>`;
+  const sc = $('.t-scroll', b), out = $('.t-out', b), line = $('.t-line', b), ps = $('.t-ps', b), inp = $('.t-in', b), ghost = $('.t-ghost', b);
+  const tcfg = () => (typeof LOOK === 'function' && LOOK().term) || { scheme: 'night', prompt: 'bash', suggest: false, fastfetch: false, size: 13.5 };
+  const zoom = d => { T.size = d === 0 ? tcfg().size : clamp(T.size + d, 9, 24); b.style.fontSize = T.size + 'px'; };
+  const applyTermLook = () => {
+    const c = tcfg(); b.className = b.className.replace(/\bts-\w+/g, '').trim() + ' ts-' + c.scheme; T.size = c.size; b.style.fontSize = T.size + 'px';
+    if (!T.busy && !T.reader && !T.repl && T.pending == null) ps.innerHTML = T.ps1(); updGhost();
+  };
+  // Fish-style autosuggestion: the newest history entry that starts with what you typed, shown in grey.
+  const suggestion = () => { const v = inp.value; if (!tcfg().suggest || !v || T.reader || T.repl || inp.selectionStart !== v.length) return ''; for (let i = T.hist.length - 1; i >= 0; i--) if (T.hist[i].startsWith(v) && T.hist[i] !== v) return T.hist[i].slice(v.length); return ''; };
+  const updGhost = () => { const s = suggestion(); ghost.innerHTML = s ? `<span class="t-gv">${esc(inp.value)}</span>${esc(s)}` : ''; };
+  inp.addEventListener('input', updGhost); inp.addEventListener('keyup', e => { if (/Arrow|Home|End/.test(e.key)) updGhost(); });
+  document.addEventListener('look', applyTermLook);
   T.scroll = () => { sc.scrollTop = sc.scrollHeight; };
   T.print = html => { const d = document.createElement('div'); d.className = 't-l'; d.innerHTML = html; out.append(d); while (out.childElementCount > 1500) out.firstChild.remove(); T.scroll(); return d; };
-  T.ps1 = () => T.root ? `root@nightos:${T.cwd}# ` : `<span class="c-g b">night@nightos</span>:<span class="c-b b">${esc(tilde(T.cwd))}</span>$ `;
+  T.ps1 = () => {
+    if (T.root) return `root@nightos:${T.cwd}# `;
+    const p = tcfg().prompt, where = esc(tilde(T.cwd)), bad = T.status ? ` <span class="c-r b">[${T.status}]</span>` : '';
+    if (p === 'fish') return `<span class="c-g">night</span>@<span class="c-g">nightos</span> <span class="c-b">${where}</span>${bad}&gt; `;
+    if (p === 'arrow') return `<span class="${T.status ? 'c-r' : 'c-g'} b">➜</span>  <span class="c-c b">${where === '~' ? '~' : esc(splitPath(T.cwd)[1] || '/')}</span> `;
+    return `<span class="c-g b">night@nightos</span>:<span class="c-b b">${where}</span>$ `;
+  };
+  win.T = T;
   const setTitle = () => win.setTitle(`${T.root ? 'root' : 'night'}@nightos: ${T.root ? T.cwd : tilde(T.cwd)}`);
   const showPrompt = () => {
     T.busy = false; line.hidden = false; inp.classList.remove('pw');
@@ -176,10 +193,10 @@ function TerminalApp(arg) {
     T.reader = { res, rej, prompt, hidden }; inp.focus({ preventScroll: true }); T.scroll();
   });
   win.onFocus = () => { if (!T.busy || T.reader) inp.focus({ preventScroll: true }); else sc.focus({ preventScroll: true }); };
-  win.onClose = () => { T.cancel = true; T.closed = true; if (T.nodeWorker) T.nodeWorker.terminate(); };
+  win.onClose = () => { T.cancel = true; T.closed = true; if (T.nodeWorker) T.nodeWorker.terminate(); document.removeEventListener('look', applyTermLook); };
   sc.addEventListener('mouseup', () => { if (!String(getSelection())) win.onFocus(); });
   async function submit() {
-    const v = inp.value; inp.value = ''; T.lastTab = null;
+    const v = inp.value; inp.value = ''; T.lastTab = null; ghost.innerHTML = '';
     if (T.reader) {
       const r = T.reader; T.reader = null; T.print(esc(r.prompt) + (r.hidden ? '' : esc(v))); line.hidden = true; inp.classList.remove('pw'); r.res(v); return;
     }
@@ -223,6 +240,7 @@ function TerminalApp(arg) {
     if (e.ctrlKey && (k === '=' || k === '+')) { e.preventDefault(); zoom(1); return; }
     if (e.ctrlKey && k === '-') { e.preventDefault(); zoom(-1); return; }
     if (e.target !== inp) { if (k.length === 1 && !e.ctrlKey && !e.metaKey) inp.focus(); else return; }
+    if ((k === 'ArrowRight' || k === 'End') && inp.selectionStart === inp.value.length) { const s = suggestion(); if (s) { e.preventDefault(); inp.value += s; updGhost(); return; } }
     if (k === 'Enter') { e.preventDefault(); submit(); }
     else if (k === 'Tab') { e.preventDefault(); if (!T.reader && !T.repl) complete(); }
     else if (k === 'ArrowUp' && !T.reader) { e.preventDefault(); if (!T.hist.length) return; T.hi = T.hi == null ? T.hist.length - 1 : Math.max(0, T.hi - 1); inp.value = T.hist[T.hi]; setTimeout(() => inp.setSelectionRange(inp.value.length, inp.value.length)); }
@@ -248,7 +266,10 @@ function TerminalApp(arg) {
       T.lastTab = before;
     }
   }
-  if (firstTerm) { firstTerm = false; T.print('To run a command as administrator (user "root"), use "sudo &lt;command&gt;".\nSee "man sudo_root" for details.\n'); }
+  applyTermLook();
+  if (tcfg().fastfetch) { try { CMDS.neofetch(makeCtx(T, { stdin: null, tty: true })); T.print(''); } catch (e) { } }
+  else if (firstTerm) T.print('To run a command as administrator (user "root"), use "sudo &lt;command&gt;".\nSee "man sudo_root" for details.\n');
+  firstTerm = false;
   showPrompt();
   return win;
 }
@@ -438,7 +459,7 @@ const CMDS = {
     const art = ['            .::-=-::.     ', '         .-==-:.          ', '       .===:              ', '      -===:               ', '     :====                ', '     ====-                ', '     ====-                ', '     :====.               ', '      -====:          .   ', '       :=====-:...:-=+:   ', '         :-=======+=-.    ', '            .::--::.      ', '                          ', '                          '];
     const info = [`<span class="c-acc b">night</span>@<span class="c-acc b">nightos</span>`, '-------------',
       ['OS', `NightOS 24.10 (Umbra) ${REAL.arch || 'x86_64'}`], ['Host', REAL.host || 'Browser Virtual Machine'], ['Kernel', '6.8.0-45-night'], ['Uptime', uptimeStr()], ['Packages', `${1873 + INSTALLED.size} (dpkg), 12 (flatpak)`],
-      ['Shell', 'bash 5.2.21'], ['Resolution', `${W}x${H}`], ['DE', 'Dusk 46.2'], ['WM', 'Dusk-WM'], ['Theme', `Umbra-${CFG.style} [GTK3]`], ['Icons', 'Nocturne [GTK3]'],
+      ['Shell', 'bash 5.2.21'], ['Resolution', `${W}x${H}`], ['DE', 'Dusk 46.2'], ['WM', 'Dusk-WM'], ['Theme', `${(typeof THEMES !== 'undefined' && THEMES[CFG.theme] ? THEMES[CFG.theme].name : 'Custom')}-${CFG.style}`], ['Icons', 'Nocturne [GTK3]'],
       ['Terminal', 'night-terminal'], ['CPU', `${CPU_NAME} (${SYS.cores}) @ 3.20GHz`], ['GPU', gpuName()], ['Memory', `${Math.round(SYS.mem)}MiB / ${Math.round(SYS.memTotal)}MiB`]];
     const pal = ['#2e3436', '#cc0000', '#4e9a06', '#c4a000', '#3465a4', '#75507b', '#06989a', '#d3d7cf'], pal2 = ['#555753', '#ef2929', '#8ae234', '#fce94f', '#729fcf', '#ad7fa8', '#34e2e2', '#eeeeec'];
     const rows = info.map(x => typeof x === 'string' ? x : `<span class="c-acc b">${x[0]}</span>: ${esc(x[1])}`);

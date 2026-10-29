@@ -1,6 +1,6 @@
 'use strict';
 /* ================= utilities ================= */
-const BAR = 32;
+let BAR = 32; // height reserved at the top of the screen; the panel layout changes it
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -51,13 +51,19 @@ const ACCENTS = {
   blue: ['#78aeed', '#0d1a2b'], teal: ['#5ec7c1', '#06201e'], green: ['#6fd08c', '#082012'], yellow: ['#f2cc5b', '#2a2005'],
   orange: ['#f4a259', '#2b1503'], red: ['#f0756c', '#2c0806'], pink: ['#ef8fc4', '#2b0a1c'], purple: ['#b493f2', '#1a0f30'], slate: ['#9aa9c3', '#111622']
 };
+// Dark text on light accents, light text on dark ones (WCAG relative luminance).
+function accentText(hex) {
+  const n = parseInt(hex.slice(1), 16), ch = [n >> 16, n >> 8 & 255, n & 255].map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); });
+  return .2126 * ch[0] + .7152 * ch[1] + .0722 * ch[2] > .32 ? '#0c1414' : '#ffffff';
+}
 function applyLook() {
-  const [a, f] = ACCENTS[CFG.accent] || ACCENTS.blue;
+  const [a, f] = ACCENTS[CFG.accent] || (/^#[0-9a-f]{6}$/i.test(CFG.accent || '') ? [CFG.accent, accentText(CFG.accent)] : ACCENTS.blue);
   document.documentElement.style.setProperty('--accent', a);
   document.documentElement.style.setProperty('--accent-fg', f);
   $('#os').classList.toggle('light', CFG.style === 'light');
   $('#dim').style.opacity = ((100 - CFG.bright) / 100 * 0.75).toFixed(3);
   $('#warm').style.opacity = CFG.night ? (0.12 + CFG.nightTemp / 100 * 0.3).toFixed(3) : 0;
+  if (typeof applyTheme === 'function') applyTheme();
 }
 
 /* ================= icons ================= */
@@ -519,8 +525,10 @@ function uptimeStr(short) {
 
 /* ================= window manager ================= */
 const WM = { wins: [], z: 20, seq: 0, active: null };
-const dockReserve = () => isNarrow() ? 66 : 78;
-const workArea = () => ({ x: 0, y: BAR, w: innerWidth, h: innerHeight - BAR - dockReserve() });
+// look.js replaces RESERVE so the active layout (top bar + dock, or a panel on any edge) decides what windows may cover
+let RESERVE = () => ({ top: BAR, bottom: isNarrow() ? 66 : 78, left: 0, right: 0 });
+const dockReserve = () => RESERVE().bottom;
+const workArea = () => { const r = RESERVE(); return { x: r.left, y: r.top, w: innerWidth - r.left - r.right, h: innerHeight - r.top - r.bottom }; };
 const APPS = {};
 function setRect(win, x, y, w, h) {
   win.r = { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) };
@@ -605,8 +613,8 @@ function applySnap(win, mode, animate = true) {
   const wa = workArea();
   if (animate) { win.el.classList.add('anim'); setTimeout(() => win.el.classList.remove('anim'), 220); }
   if (mode === 'max') setRect(win, wa.x, wa.y, wa.w, wa.h);
-  else if (mode === 'left') setRect(win, 0, wa.y, wa.w / 2, wa.h);
-  else setRect(win, wa.w / 2, wa.y, wa.w - Math.round(wa.w / 2), wa.h);
+  else if (mode === 'left') setRect(win, wa.x, wa.y, wa.w / 2, wa.h);
+  else setRect(win, wa.x + wa.w / 2, wa.y, wa.w - Math.round(wa.w / 2), wa.h);
   win.state = mode === 'max' ? 'max' : 'tiled'; win.snap = mode;
   win.el.classList.toggle('max', mode === 'max'); win.el.classList.toggle('tiled', mode !== 'max');
   $('[data-a="max"]', win.el).innerHTML = sym(mode === 'max' ? 'restore' : 'max');
@@ -622,7 +630,7 @@ function unsnap(win, animate = true) {
 function toggleMax(win) { if (win.state === 'max') unsnap(win); else applySnap(win, 'max'); }
 function showSnap(mode) {
   const s = $('#snap'); if (!mode) { s.hidden = true; return; }
-  const wa = workArea(), g = 6, r = mode === 'max' ? [g, wa.y + g, wa.w - 2 * g, wa.h - 2 * g] : mode === 'left' ? [g, wa.y + g, wa.w / 2 - 1.5 * g, wa.h - 2 * g] : [wa.w / 2 + g / 2, wa.y + g, wa.w / 2 - 1.5 * g, wa.h - 2 * g];
+  const wa = workArea(), g = 6, r = mode === 'max' ? [wa.x + g, wa.y + g, wa.w - 2 * g, wa.h - 2 * g] : mode === 'left' ? [wa.x + g, wa.y + g, wa.w / 2 - 1.5 * g, wa.h - 2 * g] : [wa.x + wa.w / 2 + g / 2, wa.y + g, wa.w / 2 - 1.5 * g, wa.h - 2 * g];
   Object.assign(s.style, { left: r[0] + 'px', top: r[1] + 'px', width: r[2] + 'px', height: r[3] + 'px', zIndex: WM.z }); s.hidden = false;
 }
 function startDrag(win, e) {

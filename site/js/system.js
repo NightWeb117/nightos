@@ -147,7 +147,10 @@ function onLogin() {
   SYS.boot = SYS.boot || Date.now(); playSound('login');
   setTimeout(() => notify('settings', 'Welcome to NightOS 24.10', 'Open Activities in the top-left corner to find your apps.'), 900);
   if (!CFG.upgraded) setTimeout(() => notify('settings', 'Software Updates', '3 updates are available for your system.', { actionLabel: 'Open Terminal', action: () => { const w = launch('terminal'); setTimeout(() => { const i = w && w.body.querySelector('.t-in'); if (i) i.value = 'sudo apt update && sudo apt upgrade'; }, 50); }, ms: 8000 }), 7000);
-  if (!CFG.toured) setTimeout(() => launch('tour'), 600);
+  if (CFG.helloOnStart !== false && APPS.hello) setTimeout(() => launch('hello'), 600);
+  else if (!CFG.toured) setTimeout(() => launch('tour'), 600);
+  if (CFG.autoSnap && typeof createSnapshot === 'function') setTimeout(() => createSnapshot(`Automatic – ${fmtWhen(Date.now())}`, true), 3000);
+  if (CFG.vm && CFG.vm.autostart && APPS.linux) setTimeout(() => { const w = launch('linux'); if (w) setTimeout(() => minimizeWin(w), 400); }, 1500);
 }
 
 /* ================= boot the page ================= */
