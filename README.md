@@ -1,5 +1,7 @@
 # NightOS
 
+**[Try it in your browser](https://nightweb117.github.io/nightos/)** · **[Download NightOS for Windows](https://github.com/NightWeb117/nightos/releases/latest)**
+
 A Linux desktop that runs in your browser. The desktop, windows and apps are
 written in plain JavaScript. The **Linux Terminal** app boots real Alpine Linux
 on an emulated x86 PC, so the kernel, processes and package manager are real.

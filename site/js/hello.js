@@ -15,7 +15,7 @@ function HelloApp(start = 'welcome') {
   function render() {
     $$('button', seg).forEach(b => b.classList.toggle('on', b.dataset.t === tab));
     if (tab === 'welcome') box.innerHTML = `<div class="ap-page"><div class="hl-hero">${LOGO}<div><h2>Welcome to NightOS</h2><p>A calm desktop that runs in your browser, with real Linux, real Python and your own apps. Here's where to start.</p></div></div>
-      <div class="hl-grid">${tile('theme', AI.settings(), 'Make it yours', 'Themes, colors, panel and windows')}${tile('store', AI.store(), 'Install apps', 'Discord, games, tools and your own')}${tile('linux', AI.linux(), 'Real Linux', 'Boot Alpine Linux and use apt')}${tile('snap', fileSVG('archive'), 'Snapshots', 'Save and restore your whole system')}${tile('tour', AI.tour(), 'Take the tour', 'Five quick tips about NightOS')}${tile('docs', AI.browser(), 'Documentation', 'Shortcuts and how-tos')}${tile('search', AI.apps(), 'Search everything', 'Press Alt+F2 or Ctrl+Space')}${tile('issue', fileSVG('md'), 'Report a problem', 'Opens GitHub in a new tab')}</div>
+      <div class="hl-grid">${tile('theme', AI.settings(), 'Make it yours', 'Themes, colors, panel and windows')}${tile('store', AI.store(), 'Install apps', 'Discord, games, tools and your own')}${tile('linux', AI.linux(), 'Real Linux', 'Boot Alpine Linux and use apt')}${tile('snap', fileSVG('archive'), 'Snapshots', 'Save and restore your whole system')}${tile('tour', AI.tour(), 'Take the tour', 'Five quick tips about NightOS')}${tile('docs', AI.browser(), 'Documentation', 'Shortcuts and how-tos')}${tile('search', AI.apps(), 'Search everything', 'Press Alt+F2 or Ctrl+Space')}${window.nightosNative ? '' : tile('windows', AI.games ? AI.games() : AI.apps(), 'NightOS for Windows', 'Play your Steam games and use Discord')}${tile('issue', fileSVG('md'), 'Report a problem', 'Opens GitHub in a new tab')}</div>
       <div class="grp">${ui.row('Show NightOS Hello when I log in', '', `<button class="sw ${CFG.helloOnStart !== false ? 'on' : ''}" data-hs role="switch" aria-checked="${CFG.helloOnStart !== false}" aria-label="Show on login"></button>`)}</div></div>`;
     else if (tab === 'tweaks') {
       const L = LOOK();
@@ -39,6 +39,7 @@ function HelloApp(start = 'welcome') {
       if (k === 'theme') launch('settings', 'theme'); else if (k === 'store') launch('store'); else if (k === 'linux') launch('linux'); else if (k === 'snap') launch('settings', 'snapshots');
       else if (k === 'tour') launch('tour'); else if (k === 'docs') launch('browser', 'docs.nightos.org'); else if (k === 'search') openRunner();
       else if (k === 'issue') window.open('https://github.com/NightWeb117/nightos/issues/new', '_blank', 'noopener');
+      else if (k === 'windows') window.open('https://github.com/NightWeb117/nightos/releases/latest', '_blank', 'noopener');
       return;
     }
     if (e.target.closest('[data-hs]')) { CFG.helloOnStart = CFG.helloOnStart === false; saveCfg(); render(); return; }
