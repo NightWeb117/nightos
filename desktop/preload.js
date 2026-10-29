@@ -16,5 +16,11 @@ contextBridge.exposeInMainWorld('nightosNative', {
   describeProgram: p => ipcRenderer.invoke('native:describeProgram', p),
   runProgram: p => ipcRenderer.invoke('native:runProgram', p),
   forgetApprovals: () => ipcRenderer.invoke('native:forgetApprovals'),
+  // Updates from GitHub releases
+  updateState: () => ipcRenderer.invoke('native:updateState'),
+  checkForUpdates: () => ipcRenderer.invoke('native:updateCheck'),
+  installUpdate: () => ipcRenderer.invoke('native:updateInstall'),
+  setAutoUpdate: on => ipcRenderer.invoke('native:setAutoUpdate', on),
+  onUpdate: cb => { ipcRenderer.on('native:update', (e, s) => cb(s)); },
   pathForFile: file => { try { return webUtils.getPathForFile(file); } catch (e) { return ''; } }
 });

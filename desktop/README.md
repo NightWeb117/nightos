@@ -15,6 +15,10 @@ program lets it do things a web page can't:
   Programs**, with their real icons. Add any other program with **Add Program…**,
   or drag it from File Explorer onto NightOS. The first time each one runs, a
   Windows dialog asks you to confirm.
+- **Updates:** the installed app checks GitHub Releases, downloads new versions in
+  the background and installs them when NightOS restarts. The portable `.exe`
+  can't replace itself, so it tells you when a new version is out and offers the
+  download. **Settings › Desktop App › Updates** has Check Now and an on/off switch.
 - **Full screen:** press F11 any time, or turn on **Settings › Desktop App ›
   Start in full screen**. **Power Off** quits the app.
 
@@ -33,7 +37,9 @@ npm install
 npm run dist
 ```
 
-The installer and portable `.exe` are written to `release/`. The website in `../site`
+The installer and portable `.exe` are written to `release/`, with `latest.yml` and
+the installer's `.blockmap`. Upload all four to the GitHub release, or installed
+copies won't see the update. The website in `../site`
 is bundled in, so rebuild after you change it.
 
 If the build fails with `EBUSY ... app.asar`, something on the PC (usually an

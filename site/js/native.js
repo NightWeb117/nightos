@@ -120,10 +120,46 @@ function WebAppWindow(a, appId) {
   return win;
 }
 
+/* ---------- updates from GitHub releases ---------- */
+const UPDATE = { s: null, told: '' };
+function updateText(s) {
+  if (!s) return 'Checking…';
+  if (s.kind === 'dev') return 'Updates are off while running from source';
+  return {
+    idle: `Version ${s.current}`, checking: 'Checking for updates…', none: `Version ${s.current} is the latest`,
+    available: s.kind === 'portable' ? `Version ${s.version} is available. Download it and run it instead of this copy` : `Version ${s.version} is available`,
+    downloading: `Downloading version ${s.version}… ${s.progress || 0}%`, ready: `Version ${s.version} is ready. It installs when you restart NightOS`,
+    error: 'Couldn’t check for updates' + (s.error ? `: ${s.error}` : '')
+  }[s.status] || '';
+}
+function updateButton(s) {
+  if (!s || s.kind === 'dev') return '';
+  if (s.status === 'ready') return '<button class="hbtn sug" data-up-install>Restart to Update</button>';
+  if (s.status === 'available') return `<button class="hbtn sug" data-up-install>${s.kind === 'portable' ? 'Download' : 'Download Update'}</button>`;
+  return `<button class="hbtn" data-up-check style="background:var(--press)" ${s.status === 'checking' || s.status === 'downloading' ? 'disabled' : ''}>Check Now</button>`;
+}
+if (NATIVE && NATIVE.onUpdate) {
+  const onState = s => {
+    UPDATE.s = s;
+    const key = s.status + s.version;
+    if ((s.status === 'ready' || s.status === 'available') && UPDATE.told !== key) {
+      UPDATE.told = key;
+      if (s.status === 'ready') notify('settings', `NightOS ${s.version} is ready`, 'Restart NightOS to install the update.', { actionLabel: 'Restart Now', action: () => NATIVE.installUpdate() });
+      else notify('settings', `NightOS ${s.version} is available`, s.kind === 'portable' ? 'Download the new portable version and run it instead of this one.' : 'Download it from Settings › Desktop App.', { actionLabel: s.kind === 'portable' ? 'Download' : 'Download Update', action: () => NATIVE.installUpdate() });
+    }
+    WM.wins.filter(w => w.app === 'settings' && w.show).forEach(w => {
+      const r = w.body.querySelector('[data-up-row]'); if (!r) return;
+      r.querySelector('small').textContent = updateText(s); r.querySelector('[data-up-btn]').innerHTML = updateButton(s);
+    });
+  };
+  NATIVE.onUpdate(onState); NATIVE.updateState().then(onState);
+}
+
 /* ---------- Settings › Desktop App ---------- */
 if (NATIVE) SETTINGS_EXTRA.push({
   id: 'desktopapp', label: 'Desktop App', icon: 'desktop', group: 'system',
   render: () => `<div class="grp" style="padding:16px 18px;display:flex;gap:14px;align-items:center">${LOGO.replace('<svg', '<svg style="width:48px;height:48px;color:var(--accent);flex:none"')}<div style="flex:1"><b>NightOS for Windows</b><p style="margin:4px 0 0;color:var(--fg-dim)" data-ver>Desktop app</p></div></div>
+    ${NATIVE.onUpdate ? `<h4>Updates</h4><div class="grp"><div class="row" data-up-row><div class="tx">Software updates<small>${esc(updateText(UPDATE.s))}</small></div><span data-up-btn>${updateButton(UPDATE.s)}</span></div>${ui.row(UPDATE.s && UPDATE.s.kind === 'portable' ? 'Check for updates automatically' : 'Install updates automatically', UPDATE.s && UPDATE.s.kind === 'portable' ? 'The portable version tells you when a new one is out' : 'Downloads new versions in the background and installs them when NightOS restarts', `<button class="sw ${!UPDATE.s || UPDATE.s.auto ? 'on' : ''}" data-up-auto role="switch" aria-checked="${!UPDATE.s || UPDATE.s.auto}" aria-label="Automatic updates"></button>`)}</div>` : ''}
     <h4>Window</h4><div class="grp">${ui.row('Start in full screen', 'NightOS fills the screen like its own desktop. Press F11 any time to switch', `<button class="sw" data-fs-start role="switch" aria-label="Start in full screen"></button>`)}${ui.row('Full screen now', '', '<button class="hbtn" data-fs-now style="background:var(--press)">Toggle (F11)</button>')}</div>
     <h4>Your apps</h4><div class="grp">${ui.row('Steam', STEAM.found ? `${STEAM.games.length} installed games found` : STEAM.scanned ? 'Not found on this PC' : 'Checking…', '<button class="hbtn" data-rescan style="background:var(--press)">Rescan</button>')}${ui.row('Discord', '<span data-dc>Checking…</span>', '<button class="hbtn" data-dc-open style="background:var(--press)">Open</button>')}${ui.row('Websites', 'Nightfox and web apps load real sites. Logins are kept between sessions', '')}</div>
     <h4>Windows programs</h4><div class="grp">${ui.row('Show Windows desktop shortcuts', 'Your Windows desktop programs and shortcuts appear on the NightOS desktop', `<button class="sw ${CFG.winOnDesk ? 'on' : ''}" data-wd role="switch" aria-checked="${!!CFG.winOnDesk}" aria-label="Show Windows desktop shortcuts"></button>`)}${ui.row('Windows Programs', 'Run, add and pin programs from your PC', '<button class="hbtn" data-wp style="background:var(--press)">Open</button>')}${ui.row('Forget approved programs', 'NightOS asks again before running each program', '<button class="hbtn" data-wf style="background:var(--press)">Forget</button>')}</div>
@@ -136,6 +172,11 @@ if (NATIVE) SETTINGS_EXTRA.push({
     });
     $('[data-fs-start]', main).onclick = async e => { const on = !e.currentTarget.classList.contains('on'); await NATIVE.setStartFullscreen(on); ctx.rerender(); };
     $('[data-fs-now]', main).onclick = () => NATIVE.setFullscreen();
+    if (NATIVE.onUpdate) {
+      // set as a property, not a listener, so re-rendering the page doesn't stack handlers
+      main.onclick = e => { if (e.target.closest('[data-up-check]')) NATIVE.checkForUpdates(); if (e.target.closest('[data-up-install]')) NATIVE.installUpdate(); };
+      $('[data-up-auto]', main).onclick = async e => { const on = !e.currentTarget.classList.contains('on'); await NATIVE.setAutoUpdate(on); UPDATE.s = await NATIVE.updateState(); ctx.rerender(); };
+    }
     $('[data-rescan]', main).onclick = () => { STEAM.scanned = false; scanSteam().then(ctx.rerender); ctx.rerender(); };
     $('[data-dc-open]', main).onclick = () => nativeDiscord();
     $('[data-wd]', main).onclick = () => { CFG.winOnDesk = !CFG.winOnDesk; saveCfg(); renderDesktop(); ctx.rerender(); };

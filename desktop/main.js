@@ -129,6 +129,15 @@ function setUpIpc() {
     const out = []; for (const p of r.filePaths) { try { out.push(await describeProgram(p)); } catch (e) { } } return out;
   }));
   ipcMain.handle('native:forgetApprovals', guard(() => { config.approvedPrograms = []; saveConfig(config); return true; }));
+  ipcMain.handle('native:updateState', guard(() => updates.state()));
+  ipcMain.handle('native:updateCheck', guard(() => { updates.check(); return true; }));
+  ipcMain.handle('native:updateInstall', guard(() => updates.install()));
+  ipcMain.handle('native:setAutoUpdate', guard(on => updates.setAuto(on)));
+}
+let updates = null;
+function setUpUpdates() {
+  updates = require('./updater')({ config, saveConfig, send: s => { if (win && !win.isDestroyed()) win.webContents.send('native:update', s); } });
+  if (!SELFTEST) updates.start();
 }
 function createWindow() {
   win = new BrowserWindow({
@@ -161,6 +170,6 @@ app.on('web-contents-created', (e, contents) => {
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
-  app.whenReady().then(() => { config = loadConfig(); handleProtocol(); setUpWebSession(); setUpIpc(); createWindow(); });
+  app.whenReady().then(() => { config = loadConfig(); handleProtocol(); setUpWebSession(); setUpUpdates(); setUpIpc(); createWindow(); });
   app.on('window-all-closed', () => app.quit());
 }

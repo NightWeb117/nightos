@@ -39,6 +39,9 @@ module.exports = (win, app) => {
       report.steps.winGuard = await js(`(async () => { const out = []; for (const p of ['C:\\\\Windows\\\\win.ini', 'relative.exe', 'C:\\\\nope\\\\missing.exe']) { try { await nightosNative.runProgram(p); out.push(p + ': RAN'); } catch (e) { out.push(p + ': refused'); } } return out; })()`);
       report.steps.settings = await js(`(async () => { WM.wins.forEach(w => closeWin(w, true)); launch('settings', 'desktopapp'); await new Promise(r => setTimeout(r, 1200)); return document.querySelector('.st-page').innerText.slice(0, 200); })()`);
       await shot('5-settings-desktop-app');
+      // With NIGHTOS_UPDATE_FEED set, check that feed and wait for the download to finish (never installs).
+      report.steps.update = await js(`(async () => { const seen = []; nightosNative.onUpdate(s => { if (seen[seen.length - 1] !== s.status) seen.push(s.status); }); await nightosNative.checkForUpdates(); let s; for (let i = 0; i < 90; i++) { await new Promise(r => setTimeout(r, 1000)); s = await nightosNative.updateState(); if (['ready', 'none', 'error', 'available'].includes(s.status)) break; } return { seen, final: s }; })()`);
+      await shot('8-update-status');
     } catch (e) { report.fatal = String(e && e.stack || e); }
     fs.writeFileSync(path.join(outDir, 'report.json'), JSON.stringify(report, null, 2));
     app.quit();
