@@ -114,7 +114,7 @@ SETTINGS_EXTRA.push(
   {
     id: 'terminalcfg', label: 'Terminal', icon: 'term', group: 'look',
     render: () => {
-      const T = LOOK().term, schemes = [['tidal', 'Tidal'], ['night', 'Night'], ['ember', 'Ember'], ['grape', 'Grape'], ['paper', 'Paper']];
+      const T = LOOK().term, schemes = TERM_SCHEMES;
       return `<h4>Colors</h4><div class="grp" style="padding:14px"><div class="ts-grid">${schemes.map(([k, n]) => `<button class="ts-card ts-${k} ${T.scheme === k ? 'on' : ''}" data-look-seg="term.scheme" data-v="${k}"><code><span class="c-g b">night@nightos</span> <span class="c-b b">~</span>&gt; ls</code><code><span class="c-b b">Documents</span>  <span class="c-g b">run.sh</span>  notes.txt</code><span>${n}</span></button>`).join('')}</div></div>
       <h4>Shell</h4><div class="grp">${ui.row('Prompt style', '', ui.seg('term.prompt', T.prompt, [['fish', 'Fish'], ['bash', 'Bash'], ['arrow', 'Arrow']]))}${ui.row('Autosuggestions', 'Shows a grey suggestion from your history. Press → to accept it', ui.sw('term.suggest', T.suggest))}${ui.row('System info on open', 'Runs fastfetch when a new terminal opens', ui.sw('term.fastfetch', T.fastfetch))}${ui.row('Font size', '', ui.range('term.size', T.size, 10, 20, .5, 'px'))}</div>`;
     },

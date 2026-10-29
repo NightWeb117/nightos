@@ -9,6 +9,7 @@ const LOOK_DEFAULT = {
   dockPos: 'bottom', dockSize: 44,
   font: 'noto', radius: 10, btnSide: 'right', btnStyle: 'glyph', titleAlign: 'center', shadow: .5, anim: 'normal',
   desktops: 4, deskIcons: true, deskIconSize: 52, wallFx: 'none', hotCorner: true,
+  wallAnim: true, particles: 'none', skin: 'none', titleFont: '', cursor: 'default', sound: '',
   widgets: [{ id: 'w1', type: 'clock', x: -330, y: 56 }, { id: 'w2', type: 'sysmon', x: -330, y: 236 }],
   term: { scheme: 'tidal', prompt: 'fish', fastfetch: true, suggest: true, size: 13.5 }
 };
@@ -28,6 +29,7 @@ const THEMES = {
   frost: { name: 'Frost', note: 'Cool blues under the aurora, panel on top.', accent: '#88c0d0', style: 'dark', wall: 'aurora', look: { layout: 'panel', panelPos: 'top', font: 'ubuntu', btnStyle: 'traffic', btnSide: 'left', titleAlign: 'center', radius: 12, term: { scheme: 'grape' } } },
   paper: { name: 'Paper', note: 'A light style for daytime, with the dock.', accent: '#3584e4', style: 'light', wall: 'ink', look: { layout: 'dock', font: 'atkinson', btnStyle: 'circle', radius: 12, term: { scheme: 'paper' } } }
 };
+const TERM_SCHEMES = [['tidal', 'Tidal'], ['night', 'Night'], ['ember', 'Ember'], ['grape', 'Grape'], ['paper', 'Paper']];
 function mergeLook(base, over) { const o = { ...base, ...over }; o.term = { ...base.term, ...(over.term || {}) }; return o; }
 function applyPreset(id, { keepWall = false } = {}) {
   const p = THEMES[id]; if (!p) return;

@@ -50,6 +50,7 @@ const newBlobId = () => 'b' + Date.now().toString(36) + Math.random().toString(3
 async function collectBlobs() {
   const used = new Set(), walk = n => { if (n.type === 'dir') Object.values(n.children).forEach(walk); else if (n.blob) used.add(n.blob); };
   walk(FS); (CFG.installed || []).forEach(a => a.blob && used.add(a.blob)); (CFG.snapshots || []).forEach(s => (s.blobs || []).forEach(b => used.add(b)));
+  [CFG.wall, ...(CFG.myThemes || []).map(t => t.wall)].forEach(w => w && w.startsWith('img:') && used.add(w.slice(4)));
   for (const k of await BLOBS.keys()) if (!used.has(k) && !String(k).startsWith('snap:')) BLOBS.del(k);
 }
 const TEXT_EXT = /\.(txt|md|sh|bash|py|js|mjs|ts|json|csv|tsv|log|conf|cfg|ini|toml|ya?ml|xml|html?|css|c|h|cpp|hpp|rs|go|java|kt|rb|php|lua|sql|env|gitignore)$/i;
