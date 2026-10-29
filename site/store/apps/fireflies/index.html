@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Firefly Catch</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #050814; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+'use strict';
+// Firefly Catch: swing a net over a moonlit pond. Fireflies score and build a combo; moths break it.
+const cv = document.getElementById('c'), g = cv.getContext('2d');
+let W, H, DPR, scene;
+const ROUND = 60, NET = 46;
+let state = 'title', t0 = 0, score = 0, combo = 0, lastCatch = -9, caught = 0, flies = [], moths = [], swings = [], pops = [], mouse = { x: -99, y: -99 };
+let best = 0; try { best = +localStorage.getItem('fireflies-best') || 0; } catch (e) { }
+let ac = null;
+function chime(f, d = .25, type = 'sine', v = .12) {
+  try { ac = ac || new AudioContext(); const o = ac.createOscillator(), gn = ac.createGain(), t = ac.currentTime; o.type = type; o.frequency.setValueAtTime(f, t); gn.gain.setValueAtTime(v, t); gn.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(gn); gn.connect(ac.destination); o.start(t); o.stop(t + d + .05); } catch (e) { }
+}
+function resize() {
+  DPR = Math.min(devicePixelRatio || 1, 2); W = cv.width = innerWidth * DPR; H = cv.height = innerHeight * DPR;
+  scene = document.createElement('canvas'); scene.width = W; scene.height = H; const s = scene.getContext('2d');
+  const sky = s.createLinearGradient(0, 0, 0, H * .62); sky.addColorStop(0, '#04061a'); sky.addColorStop(1, '#16204a'); s.fillStyle = sky; s.fillRect(0, 0, W, H * .62);
+  for (let i = 0; i < W * H / 3000; i++) { s.fillStyle = `rgba(220,228,255,${Math.random() * .7})`; s.fillRect(Math.random() * W, Math.random() * H * .58, DPR * (Math.random() < .1 ? 2 : 1), DPR * (Math.random() < .1 ? 2 : 1)); }
+  const mx = W * .74, my = H * .2, mr = Math.min(W, H) * .07;
+  let gl = s.createRadialGradient(mx, my, mr, mx, my, mr * 6); gl.addColorStop(0, 'rgba(200,210,255,.28)'); gl.addColorStop(1, 'rgba(200,210,255,0)'); s.fillStyle = gl; s.fillRect(0, 0, W, H);
+  s.fillStyle = '#f4efdc'; s.beginPath(); s.arc(mx, my, mr, 0, 7); s.fill();
+  const water = s.createLinearGradient(0, H * .62, 0, H); water.addColorStop(0, '#0d1638'); water.addColorStop(1, '#04060f'); s.fillStyle = water; s.fillRect(0, H * .62, W, H * .38);
+  for (let i = 0; i < 40; i++) { const y = H * .63 + i * H * .009, w = mr * (1.4 - i * .028) * (1 + Math.random() * .4); s.fillStyle = `rgba(244,239,220,${.32 - i * .007})`; s.fillRect(mx - w / 2 + (Math.random() - .5) * mr * .3, y, w, DPR * 1.5); }
+  s.fillStyle = '#03040b';
+  const hill = (base, amp, seed) => { s.beginPath(); s.moveTo(0, H * .62); for (let x = 0; x <= W; x += 8) s.lineTo(x, H * base - Math.sin(x / W * 5 + seed) * H * amp - Math.sin(x / W * 13 + seed * 2) * H * amp * .3); s.lineTo(W, H * .62); s.fill(); };
+  hill(.6, .035, 1); hill(.62, .02, 4);
+  for (let i = 0; i < 9; i++) { const x = (i / 8) * W * 1.05 - W * .02, rx = Math.min(W, H) * (.05 + Math.random() * .04), y = H * (.78 + Math.random() * .17); s.fillStyle = '#071a14'; s.beginPath(); s.ellipse(x, y, rx, rx * .32, 0, .3, Math.PI * 2 - .1); s.lineTo(x, y); s.fill(); }
+  s.strokeStyle = '#020308'; s.lineCap = 'round';
+  for (let i = 0; i < 70; i++) { const side = i < 35 ? Math.random() * W * .22 : W - Math.random() * W * .22, h = H * (.12 + Math.random() * .22), lean = (Math.random() - .5) * 40 * DPR; s.lineWidth = DPR * (1.5 + Math.random() * 2.5); s.beginPath(); s.moveTo(side, H); s.quadraticCurveTo(side + lean * .3, H - h * .5, side + lean, H - h); s.stroke(); if (Math.random() < .3) { s.fillStyle = '#05040a'; s.beginPath(); s.ellipse(side + lean, H - h, DPR * 3, DPR * 9, lean / 90, 0, 7); s.fill(); } }
+}
+function spawnFly() { flies.push({ x: Math.random() * W, y: H * (.15 + Math.random() * .6), vx: 0, vy: 0, ph: Math.random() * 6.28, blink: 1.2 + Math.random() * 2, seed: Math.random() * 100 }); }
+function spawnMoth() { const left = Math.random() < .5; moths.push({ x: left ? -40 * DPR : W + 40 * DPR, y: H * (.2 + Math.random() * .5), dir: left ? 1 : -1, sp: (60 + Math.random() * 60) * DPR, ph: Math.random() * 6.28 }); }
+function start() { state = 'play'; t0 = performance.now(); score = 0; combo = 0; caught = 0; flies = []; moths = []; pops = []; for (let i = 0; i < 14; i++) spawnFly(); chime(660, .3); }
+function swing(x, y) {
+  const now = performance.now() / 1000; swings.push({ x, y, t: now });
+  if (state !== 'play') { if (state === 'title' || (state === 'over' && now - endedAt > .8)) start(); return; }
+  const r = NET * DPR; let hit = 0, bad = false;
+  flies = flies.filter(f => { if (Math.hypot(f.x - x, f.y - y) < r) { hit++; return false; } return true; });
+  moths = moths.filter(m => { if (Math.hypot(m.x - x, m.y - y) < r * .9) { bad = true; return false; } return true; });
+  if (bad) { combo = 0; score = Math.max(0, score - 15); pops.push({ x, y, txt: '-15  moth!', c: '#ff8a7a', t: now }); chime(140, .35, 'sawtooth', .07); }
+  if (hit) {
+    combo = now - lastCatch < 1.6 ? combo + hit : hit; lastCatch = now; caught += hit;
+    const pts = hit * 10 * Math.min(5, 1 + Math.floor(combo / 3)); score += pts;
+    pops.push({ x, y, txt: `+${pts}${combo >= 3 ? `  x${Math.min(5, 1 + Math.floor(combo / 3))}` : ''}`, c: '#ffe38a', t: now });
+    chime(880 + Math.min(combo, 8) * 80, .28); for (let i = 0; i < hit; i++) spawnFly();
+  } else if (!bad) combo = 0;
+}
+let endedAt = 0;
+cv.addEventListener('pointerdown', e => { const r = cv.getBoundingClientRect(); swing((e.clientX - r.left) * DPR, (e.clientY - r.top) * DPR); });
+cv.addEventListener('pointermove', e => { const r = cv.getBoundingClientRect(); mouse = { x: (e.clientX - r.left) * DPR, y: (e.clientY - r.top) * DPR }; });
+addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') swing(mouse.x, mouse.y); });
+function text(s, x, y, size, color, align = 'center', weight = 700) { g.font = `${weight} ${size * DPR}px system-ui, "Segoe UI", sans-serif`; g.textAlign = align; g.textBaseline = 'middle'; g.fillStyle = color; g.fillText(s, x, y); }
+function frame(now) {
+  const t = now / 1000; g.drawImage(scene, 0, 0);
+  const left = state === 'play' ? Math.max(0, ROUND - (now - t0) / 1000) : 0;
+  if (state === 'play' && left <= 0) { state = 'over'; endedAt = t; if (score > best) { best = score; try { localStorage.setItem('fireflies-best', best); } catch (e) { } } chime(523, .6); setTimeout(() => chime(392, .7), 180); }
+  if (state === 'play' && Math.random() < .006 + (ROUND - left) / ROUND * .012 && moths.length < 4) spawnMoth();
+  g.globalCompositeOperation = 'lighter';
+  for (const f of flies) {
+    const n = f.seed + t * .4; f.vx += (Math.sin(n * 1.7) + Math.sin(n * 3.1) * .5) * .06 * DPR; f.vy += (Math.cos(n * 1.3) + Math.cos(n * 2.7) * .5) * .05 * DPR;
+    f.vx *= .96; f.vy *= .96; f.x += f.vx; f.y += f.vy;
+    if (f.x < 0) f.x += W; if (f.x > W) f.x -= W; f.y = Math.max(H * .08, Math.min(H * .9, f.y));
+    const on = Math.max(0, Math.sin(t * Math.PI * 2 / f.blink + f.ph)), lit = .25 + on * .75, R = (10 + on * 16) * DPR;
+    const gr = g.createRadialGradient(f.x, f.y, 0, f.x, f.y, R); gr.addColorStop(0, `rgba(255,240,150,${lit})`); gr.addColorStop(.25, `rgba(200,255,120,${lit * .45})`); gr.addColorStop(1, 'rgba(150,255,100,0)');
+    g.fillStyle = gr; g.fillRect(f.x - R, f.y - R, R * 2, R * 2);
+    if (f.y < H * .6) { g.globalAlpha = .25 * lit; g.fillStyle = 'rgba(255,240,150,1)'; g.fillRect(f.x - DPR, H * 1.24 - f.y * .4 - DPR, DPR * 2, DPR * 2); g.globalAlpha = 1; }
+  }
+  g.globalCompositeOperation = 'source-over';
+  for (const m of moths) {
+    m.x += m.dir * m.sp / 60; m.y += Math.sin(t * 3 + m.ph) * DPR * 1.2; const flap = Math.abs(Math.sin(t * 18 + m.ph));
+    g.save(); g.translate(m.x, m.y); g.scale(m.dir, 1); g.fillStyle = '#2a2730'; g.strokeStyle = 'rgba(210,210,230,.35)'; g.lineWidth = DPR;
+    for (const s of [-1, 1]) { g.beginPath(); g.ellipse(-2 * DPR, s * 7 * DPR * flap, 12 * DPR, 7 * DPR * (.3 + flap * .7), s * .5, 0, 7); g.fill(); g.stroke(); }
+    g.fillStyle = '#1b1820'; g.beginPath(); g.ellipse(0, 0, 9 * DPR, 3 * DPR, 0, 0, 7); g.fill(); g.restore();
+  }
+  moths = moths.filter(m => m.x > -60 * DPR && m.x < W + 60 * DPR);
+  for (const s of swings) { const a = (t - s.t) / .35; if (a > 1) continue; g.strokeStyle = `rgba(230,236,255,${.7 * (1 - a)})`; g.lineWidth = 2 * DPR; g.beginPath(); g.arc(s.x, s.y, NET * DPR * (.6 + a * .5), 0, 7); g.stroke(); }
+  swings = swings.filter(s => t - s.t < .4);
+  for (const p of pops) { const a = (t - p.t) / 1.1; if (a > 1) continue; g.globalAlpha = 1 - a; text(p.txt, p.x, p.y - a * 40 * DPR, 20, p.c); g.globalAlpha = 1; }
+  pops = pops.filter(p => t - p.t < 1.2);
+  if (state === 'play') {
+    g.strokeStyle = 'rgba(230,236,255,.45)'; g.lineWidth = 1.5 * DPR; g.setLineDash([4 * DPR, 5 * DPR]); g.beginPath(); g.arc(mouse.x, mouse.y, NET * DPR, 0, 7); g.stroke(); g.setLineDash([]);
+    text(`${score}`, 24 * DPR, 34 * DPR, 30, '#fff4c2', 'left');
+    text(`${caught} caught${combo >= 3 ? `   combo ${combo}` : ''}`, 24 * DPR, 64 * DPR, 14, 'rgba(220,228,255,.8)', 'left', 400);
+    text(`${Math.ceil(left)}s`, W - 24 * DPR, 34 * DPR, 26, left < 10 ? '#ff9a8a' : '#e6ebff', 'right');
+  } else {
+    g.fillStyle = 'rgba(3,5,14,.55)'; g.fillRect(0, 0, W, H);
+    if (state === 'title') { text('Firefly Catch', W / 2, H * .38, 46, '#fff4c2'); text('Click or tap to swing your net. Catch fireflies, avoid the moths.', W / 2, H * .38 + 52 * DPR, 16, 'rgba(225,230,255,.85)', 'center', 400); text('Click to start', W / 2, H * .38 + 100 * DPR, 18, '#ffe38a'); }
+    else { text('Night over', W / 2, H * .34, 40, '#fff4c2'); text(`${score} points · ${caught} fireflies`, W / 2, H * .34 + 50 * DPR, 20, '#e6ebff', 'center', 400); text(score >= best && score > 0 ? 'New best!' : `Best: ${best}`, W / 2, H * .34 + 84 * DPR, 16, '#ffe38a', 'center', 400); text('Click to play again', W / 2, H * .34 + 130 * DPR, 17, 'rgba(225,230,255,.85)', 'center', 400); }
+  }
+  requestAnimationFrame(frame);
+}
+resize(); addEventListener('resize', resize); for (let i = 0; i < 14; i++) spawnFly();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

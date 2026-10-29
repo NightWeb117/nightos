@@ -631,7 +631,7 @@ function startDrag(win, e) {
     const dx = ev.clientX - sx, dy = ev.clientY - sy;
     if (!moved && Math.hypot(dx, dy) < 5) return;
     if (!moved) {
-      moved = true; win.el.classList.add('dragging'); document.body.style.cursor = 'grabbing';
+      moved = true; win.el.classList.add('dragging'); document.body.style.cursor = 'grabbing'; document.body.classList.add('wm-drag');
       if (win.state !== 'normal') {
         const p = win.prev || { w: r.w * .6, h: r.h * .7 }, fx = (sx - r.x) / r.w;
         r = { x: sx - p.w * fx, y: sy - 18, w: p.w, h: p.h }; win.state = 'normal'; win.snap = null; win.el.classList.remove('max', 'tiled');
@@ -645,7 +645,7 @@ function startDrag(win, e) {
   };
   const up = () => {
     removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
-    win.el.classList.remove('dragging'); document.body.style.cursor = ''; showSnap(null);
+    win.el.classList.remove('dragging'); document.body.style.cursor = ''; document.body.classList.remove('wm-drag'); showSnap(null);
     if (snap) { win.prev = { ...win.r, y: Math.max(win.r.y, BAR + 10) }; win.state = 'normal'; applySnap(win, snap); win.prev = { ...win.prev }; }
   };
   addEventListener('pointermove', move); addEventListener('pointerup', up); addEventListener('pointercancel', up);
@@ -661,8 +661,8 @@ function startResize(win, dir, e) {
     if (dir.includes('n')) { h = Math.max(mh, r0.h - dy); y = r0.y + r0.h - h; if (y < BAR) { h -= BAR - y; y = BAR; } }
     setRect(win, x, y, w, h); win.onResize && win.onResize();
   };
-  const up = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', up); document.body.style.cursor = ''; };
-  document.body.style.cursor = getComputedStyle(e.target).cursor;
+  const up = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', up); document.body.style.cursor = ''; document.body.classList.remove('wm-drag'); };
+  document.body.style.cursor = getComputedStyle(e.target).cursor; document.body.classList.add('wm-drag');
   addEventListener('pointermove', move); addEventListener('pointerup', up);
 }
 addEventListener('resize', () => {

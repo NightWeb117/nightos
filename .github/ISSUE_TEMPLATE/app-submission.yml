@@ -1,0 +1,66 @@
+name: Submit an app to the NightOS App Center
+description: Share a game or app you made with every NightOS user.
+title: "App submission: "
+labels: ["app submission"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for making something for NightOS! Every submission is reviewed before it is published.
+        Apps run inside a sealed sandbox, so they can't read anyone's NightOS files or settings.
+  - type: input
+    id: name
+    attributes:
+      label: App name
+      placeholder: Moonlight Maze
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Games
+        - Tools
+        - Web Apps
+    validations:
+      required: true
+  - type: input
+    id: summary
+    attributes:
+      label: One-line summary
+      description: Shown on the app's card. Keep it under 80 characters.
+      placeholder: Find your way out of a maze before the moon sets.
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What it is, how to play or use it, and the controls.
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Your app
+      description: |
+        Drag your .html file, or a .zip of a folder that has an index.html, into this box.
+        For a web app, paste its https:// address instead.
+    validations:
+      required: true
+  - type: input
+    id: color
+    attributes:
+      label: Icon color (optional)
+      description: A hex color for the app's tile.
+      placeholder: "#e8b04b"
+  - type: checkboxes
+    id: rules
+    attributes:
+      label: Rules
+      options:
+        - label: I made this app, or I have permission to share it.
+          required: true
+        - label: It has no malware, trackers, ads that collect data, or content that isn't safe for everyone.
+          required: true

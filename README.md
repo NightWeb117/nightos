@@ -13,6 +13,7 @@ on an emulated x86 PC, so the kernel, processes and package manager are real.
 | NightOS Terminal (the other terminal) | A bash interpreter written in JavaScript, plus real Python (Brython) and real JavaScript (`node`) |
 | Files | Import from your computer, download back out, stored in IndexedDB |
 | Battery, network state, memory, CPU load, storage | Read from browser APIs |
+| App Center | Web apps (Discord, Steam store, YouTube…) open in a real tab; HTML games run sandboxed in NightOS windows. See [STORE.md](STORE.md) |
 
 What is still simulated: the NightOS desktop's own process list, and the
 Nightfox browser, which only shows the built-in nightos.org pages.

@@ -1,0 +1,29 @@
+{
+  "featured": "fireflies",
+  "apps": [
+    { "id": "fireflies", "name": "Firefly Catch", "kind": "html", "path": "store/apps/fireflies/index.html", "category": "Games", "author": "NightOS", "color": "#e8b04b", "letter": "F",
+      "summary": "Catch fireflies over a moonlit pond before the night ends.",
+      "description": "Tap or click to swing your net. Fireflies are worth points and build a combo; moths break it. You have sixty seconds, and your best score is remembered." },
+    { "id": "sketch", "name": "Night Sketch", "kind": "html", "path": "store/apps/sketch/index.html", "category": "Tools", "author": "NightOS", "color": "#7c8cff", "letter": "S",
+      "summary": "A glowing drawing pad with night-sky colors.",
+      "description": "Draw with soft glowing brushes on a dark canvas. Pick a color and size, undo strokes, and save your drawing as a PNG." },
+    { "id": "discord", "name": "Discord", "kind": "web", "url": "https://discord.com/app", "category": "Web Apps", "author": "Discord", "color": "#5865f2", "letter": "D",
+      "summary": "Chat, voice and video with your friends and servers.",
+      "description": "Opens the official Discord web app in a new browser tab, with your normal login, voice channels and screen sharing." },
+    { "id": "steam", "name": "Steam Store", "kind": "web", "url": "https://store.steampowered.com", "category": "Web Apps", "author": "Valve", "color": "#1b2838", "letter": "S",
+      "summary": "Browse, buy and wishlist games.",
+      "description": "Opens the Steam store in a new tab. Games themselves need the Steam app on a real computer or a cloud gaming service." },
+    { "id": "youtube", "name": "YouTube", "kind": "web", "url": "https://www.youtube.com", "category": "Web Apps", "author": "Google", "color": "#e5322d", "letter": "Y",
+      "summary": "Watch videos and music.", "description": "Opens YouTube in a new browser tab." },
+    { "id": "spotify", "name": "Spotify", "kind": "web", "url": "https://open.spotify.com", "category": "Web Apps", "author": "Spotify", "color": "#1db954", "letter": "S",
+      "summary": "Music and podcasts in the web player.", "description": "Opens the Spotify web player in a new browser tab." },
+    { "id": "photopea", "name": "Photopea", "kind": "web", "url": "https://www.photopea.com", "category": "Web Apps", "author": "Photopea", "color": "#18a497", "letter": "P",
+      "summary": "A full photo editor that runs in the browser.", "description": "Opens Photopea in a new browser tab. It opens PSD, XCF, Sketch and common image files." },
+    { "id": "excalidraw", "name": "Excalidraw", "kind": "web", "url": "https://excalidraw.com", "category": "Web Apps", "author": "Excalidraw", "color": "#6965db", "letter": "E",
+      "summary": "Hand-drawn style diagrams and whiteboards.", "description": "Opens Excalidraw in a new browser tab." },
+    { "id": "wikipedia", "name": "Wikipedia", "kind": "web", "url": "https://www.wikipedia.org", "category": "Web Apps", "author": "Wikimedia", "color": "#5b5f66", "letter": "W",
+      "summary": "The free encyclopedia.", "description": "Opens Wikipedia in a new browser tab." },
+    { "id": "github", "name": "GitHub", "kind": "web", "url": "https://github.com/NightWeb117/nightos", "category": "Web Apps", "author": "GitHub", "color": "#24292f", "letter": "G",
+      "summary": "NightOS's source code and app submissions.", "description": "Opens the NightOS repository on GitHub, where you can read the code or submit an app." }
+  ]
+}

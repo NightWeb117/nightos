@@ -367,7 +367,10 @@ function playIntro(host) {
       if (skipAt != null) { const k = clamp01((now - skipAt) / 350); g.fillStyle = `rgba(0,0,0,${k})`; g.fillRect(0, 0, W, H); if (k >= 1) return finish(); }
       raf = requestAnimationFrame(frame);
     }
-    function skip(e) { if (e.type === 'keydown' && ['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) return; if (skipAt == null) skipAt = performance.now(); }
+    function skip(e) {
+      if (e.type === 'keydown' && ['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) return;
+      if (skipAt == null) { skipAt = performance.now(); setTimeout(finish, 450); } // the timer covers tabs where animation frames are paused
+    }
     function finish() {
       if (ended) return; ended = true; cancelAnimationFrame(raf);
       removeEventListener('resize', resize); removeEventListener('keydown', skip, true); host.removeEventListener('pointerdown', skip);
