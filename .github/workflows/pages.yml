@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Weekly, so the Flathub list in App Center stays fresh.
+  schedule:
+    - cron: '0 6 * * 1'
 
 permissions:
   contents: read
@@ -24,6 +27,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # Fresh list of Flathub apps for App Center's Flatpak tab. Keeps the committed copy if Flathub is down.
+      - name: Refresh Flathub list
+        run: python3 .github/scripts/flathub-snapshot.py site/store/flathub.json || echo "Kept the old Flathub list"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

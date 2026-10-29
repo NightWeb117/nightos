@@ -149,8 +149,17 @@ function setUpIpc() {
   ipcMain.handle('native:updateCheck', guard(() => { updates.check(); return true; }));
   ipcMain.handle('native:updateInstall', guard(() => updates.install()));
   ipcMain.handle('native:setAutoUpdate', guard(on => updates.setAuto(on)));
+  ipcMain.handle('native:flatpakStatus', guard(() => flatpaks.status()));
+  ipcMain.handle('native:flatpakSetup', guard(() => flatpaks.setup()));
+  ipcMain.handle('native:flatpakCatalog', guard((kind, q) => flatpaks.catalog(String(kind), q)));
+  ipcMain.handle('native:flatpakDetails', guard(id => flatpaks.details(id)));
+  ipcMain.handle('native:flatpakList', guard(() => flatpaks.list()));
+  ipcMain.handle('native:flatpakInstall', guard((id, name) => flatpaks.install(id, String(name || '').slice(0, 80))));
+  ipcMain.handle('native:flatpakUninstall', guard(id => flatpaks.uninstall(id)));
+  ipcMain.handle('native:flatpakRun', guard(id => flatpaks.run(id)));
+  ipcMain.handle('native:flatpakJob', guard(() => flatpaks.current()));
 }
-let folders = null, tasks = null, captureTarget = 'nightos';
+let folders = null, tasks = null, flatpaks = null, captureTarget = 'nightos';
 // Screen Recorder: NightOS's page can record its own window or the whole screen, with the PC's sound.
 function setUpCapture() {
   session.defaultSession.setDisplayMediaRequestHandler((req, cb) => {
@@ -198,7 +207,7 @@ app.on('web-contents-created', (e, contents) => {
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
-  app.whenReady().then(() => { config = loadConfig(); handleProtocol(); setUpWebSession(); setUpUpdates(); setUpCapture(); folders = require('./winfs')({ config, saveConfig, getWin: () => win }); tasks = require('./wintasks')(); setUpIpc(); createWindow(); });
+  app.whenReady().then(() => { config = loadConfig(); handleProtocol(); setUpWebSession(); setUpUpdates(); setUpCapture(); folders = require('./winfs')({ config, saveConfig, getWin: () => win }); tasks = require('./wintasks')(); flatpaks = require('./flatpak')({ getWin: () => win, send: s => { if (win && !win.isDestroyed()) win.webContents.send('native:flatpak', s); } }); setUpIpc(); createWindow(); });
   app.on('will-quit', () => { if (tasks) tasks.stop(); });
   app.on('window-all-closed', () => app.quit());
 }

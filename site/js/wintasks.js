@@ -5,7 +5,9 @@
 if (NATIVE && NATIVE.winWindows) {
   const WT = { list: [], fg: 0, timer: 0, busy: false };
   const on = () => CFG.winTasks !== false && SYSTEM.state === 'desktop' && !document.hidden;
-  const btnHTML = (w, cls) => `<button class="${cls} wt" data-hwnd="${w.hwnd}" title="${esc(w.title)}" aria-label="${esc(w.title)} (Windows)">${w.icon ? `<img alt="" src="${w.icon}">` : AI.winapps ? AI.winapps() : ''}${cls === 'dk' ? `<span class="tip">${esc(w.title)}</span><span class="dots"><i></i></span>` : `<span class="pn-ind"><i></i></span>`}</button>`;
+  // Linux windows from WSL are all hosted by msrdc.exe. Use the Flatpak's own icon when the title matches one.
+  const linuxIcon = w => { if (!/\\msrdc\.exe$/i.test(w.exe || '')) return null; const f = (CFG.flatpaks || []).find(a => w.title.startsWith(a.name + ' (')); return f && typeof fpIcon === 'function' ? fpIcon(f.icon, f.name) : null; };
+  const btnHTML = (w, cls) => `<button class="${cls} wt" data-hwnd="${w.hwnd}" title="${esc(w.title)}" aria-label="${esc(w.title)} (Windows)">${linuxIcon(w) || (w.icon ? `<img alt="" src="${w.icon}">` : AI.winapps ? AI.winapps() : '')}${cls === 'dk' ? `<span class="tip">${esc(w.title)}</span><span class="dots"><i></i></span>` : `<span class="pn-ind"><i></i></span>`}</button>`;
   function paint() {
     const list = CFG.winTasks === false ? [] : WT.list;
     const box = $('#panel .pn-tasks');

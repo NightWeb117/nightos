@@ -38,5 +38,16 @@ contextBridge.exposeInMainWorld('nightosNative', {
   installUpdate: () => ipcRenderer.invoke('native:updateInstall'),
   setAutoUpdate: on => ipcRenderer.invoke('native:setAutoUpdate', on),
   onUpdate: cb => { ipcRenderer.on('native:update', (e, s) => cb(s)); },
+  // Flatpak apps from Flathub, installed into WSL. Installing needs the user's OK in a native dialog.
+  flatpakStatus: () => ipcRenderer.invoke('native:flatpakStatus'),
+  flatpakSetup: () => ipcRenderer.invoke('native:flatpakSetup'),
+  flatpakCatalog: (kind, q) => ipcRenderer.invoke('native:flatpakCatalog', kind, q),
+  flatpakDetails: id => ipcRenderer.invoke('native:flatpakDetails', id),
+  flatpakList: () => ipcRenderer.invoke('native:flatpakList'),
+  flatpakInstall: (id, name) => ipcRenderer.invoke('native:flatpakInstall', id, name),
+  flatpakUninstall: id => ipcRenderer.invoke('native:flatpakUninstall', id),
+  flatpakRun: id => ipcRenderer.invoke('native:flatpakRun', id),
+  flatpakJob: () => ipcRenderer.invoke('native:flatpakJob'),
+  onFlatpak: cb => { ipcRenderer.on('native:flatpak', (e, s) => cb(s)); },
   pathForFile: file => { try { return webUtils.getPathForFile(file); } catch (e) { return ''; } }
 });

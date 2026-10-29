@@ -89,7 +89,7 @@ module.exports = function wintasks() {
       const text = await ask('list'); if (text.startsWith('error')) throw new Error(text.slice(6));
       const [fg, ...rows] = text.split('\n'), mine = ownPids(), out = [];
       for (const r of rows) {
-        const [hwnd, pid, min, exe, ...t] = r.split('\t'); const title = t.join(' ').trim();
+        const [hwnd, pid, min, exe, ...t] = r.split('\t'); const title = t.join(' ').trim().replace(/^\[WARN:[^\]]*\]\s*/, ''); // WSLg adds a [WARN:COPY MODE] tag to Linux windows
         if (!hwnd || !title || mine.has(+pid) || title === 'Program Manager' || /\\(TextInputHost|SystemSettings|ShellExperienceHost|SearchHost|StartMenuExperienceHost)\.exe$/i.test(exe)) continue;
         out.push({ hwnd: +hwnd, pid: +pid, min: min === '1', title: title.slice(0, 120), exe, icon: await icon(exe) });
       }

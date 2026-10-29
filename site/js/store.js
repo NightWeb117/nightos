@@ -112,7 +112,7 @@ async function loadCatalog(force) {
 function StoreApp(start) {
   const win = openWin({ app: 'store', w: 940, h: 620, minW: 380, minH: 360, mem: 70 });
   let view = 'explore', cat = 'All', q = '', detailId = null;
-  const seg = el('<div class="seg no-drag" role="tablist"><button data-v="explore">Explore</button><button data-v="themes">Themes</button><button data-v="installed">Installed</button><button data-v="submit">Add Apps</button></div>');
+  const seg = el('<div class="seg no-drag" role="tablist"><button data-v="explore">Explore</button><button data-v="flatpak">Flatpak</button><button data-v="themes">Themes</button><button data-v="installed">Installed</button><button data-v="submit">Add Apps</button></div>');
   win.ht.innerHTML = ''; win.ht.append(seg);
   win.setTitle = t => { win.title = t; if (WM.active === win) updateTopApp(); };
   const backB = hbtn('back', 'Back', () => { detailId = null; render(); });
@@ -127,7 +127,9 @@ function StoreApp(start) {
     win.setTitle('App Center');
     $$('button', seg).forEach(b => b.classList.toggle('on', b.dataset.v === view && !detailId));
     backB.hidden = !detailId;
+    win._fpOn = false;
     if (detailId) return renderDetail();
+    if (view === 'flatpak') return renderFlatpak(box, win, render);
     if (view === 'themes') return renderThemeGallery(box, win, render);
     if (view === 'installed') return renderInstalled();
     if (view === 'submit') return renderSubmit();
@@ -224,7 +226,7 @@ function StoreApp(start) {
     if (t.closest('[data-retry]')) { STORE.error = null; return render(); }
     const go = t.closest('[data-goto]'); if (go) { view = go.dataset.goto; return render(); }
   });
-  win.go = p => { if (['explore', 'themes', 'installed', 'submit'].includes(p)) { view = p; detailId = null; } else detailId = p; render(); };
+  win.go = p => { if (['explore', 'flatpak', 'themes', 'installed', 'submit'].includes(p)) { view = p; detailId = null; } else detailId = p; render(); };
   if (start) win.go(start); else render();
   loadCatalog().then(() => { if (view === 'explore' && !detailId) render(); });
   return win;

@@ -21,6 +21,11 @@ program lets it do things a web page can't:
   writes programs or scripts there.
 - **Running programs in the taskbar:** windows open on your PC show up in the NightOS
   panel or dock. Click to switch or minimize, right-click to close.
+- **Flatpak apps:** App Center › Flatpak lists the apps on Flathub. Flatpaks are Linux
+  programs, so NightOS installs them into WSL (Windows Subsystem for Linux) and they open
+  as their own windows. The first time, NightOS offers to install WSL (needs admin and a
+  restart) and then Flatpak inside it. Installed Flatpaks show up in Activities, and the
+  terminal has `flatpak list`, `flatpak run` and `flatpak search`.
 - **Screen Recorder:** records the NightOS window or the whole screen, with sound.
 - **Updates:** the installed app checks GitHub Releases, downloads new versions in
   the background and installs them when NightOS restarts. The portable `.exe`
@@ -74,7 +79,9 @@ report to `selftest/`, then quits.
 
 The page can only call the actions listed in `preload.js`: list Steam games, launch
 Discord, Steam, a Steam game by its number or a Steam page, open a web link in your
-browser, switch full screen, and list, add or run Windows programs. `main.js` checks
+browser, switch full screen, list, add or run Windows programs, and search, install,
+remove or run Flatpak apps. A Flatpak only installs after you confirm in a native dialog, and
+only apps that are already installed can run. `main.js` checks
 each request again. A program only runs if it's an existing `.exe`, `.lnk` or `.url`
 file with a full path, and the first run of each one needs your OK in a native
 Windows dialog that page content can't fake or click. Approvals are stored in

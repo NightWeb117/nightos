@@ -1,7 +1,7 @@
 {
   "name": "nightos-desktop",
   "productName": "NightOS",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "NightOS as a Windows desktop app that can launch Discord, Steam and your Steam games.",
   "author": "NightWeb117",
   "license": "MIT",
@@ -34,6 +34,7 @@
       "updater.js",
       "winfs.js",
       "wintasks.js",
+      "flatpak.js",
       "selftest.js",
       "package.json"
     ],
